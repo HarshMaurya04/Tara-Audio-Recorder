@@ -71,7 +71,7 @@ const StoryRecorder = ({ details = {} }) => {
     [],
   );
 
-  const [sender, setSender] = useState(null);
+  const [sender, setSender] = useState("");
 
   const [isRecording, setIsRecording] = useState(false); // Is recording active?
   const [timer, setTimer] = useState(0); // Recording timer
