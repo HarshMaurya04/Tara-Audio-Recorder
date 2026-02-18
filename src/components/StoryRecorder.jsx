@@ -71,8 +71,6 @@ const StoryRecorder = ({ details = {} }) => {
     [],
   );
 
-  const [sender, setSender] = useState("");
-
   const [isRecording, setIsRecording] = useState(false); // Is recording active?
   const [timer, setTimer] = useState(0); // Recording timer
   const [showText, setShowText] = useState(true); // Controls story visibility
@@ -108,15 +106,6 @@ const StoryRecorder = ({ details = {} }) => {
   const audioContextRef = useRef(null);
   const dataArrayRef = useRef(null);
 
-  useEffect(() => {
-    const fetchSender = async () => {
-      const phone = await getSenderFromBot();
-      setSender(phone);
-      console.log("Sender from WebView:", phone);
-    };
-
-    fetchSender();
-  }, []);
 
   // Automatically adjusts font size so text fits inside story box
   const fitTextToContainer = useCallback(() => {
@@ -542,20 +531,33 @@ const StoryRecorder = ({ details = {} }) => {
   }, [audioBlob]);
 
   const handleFinalSubmit = async () => {
-    if (!audioBlob || !sender) {
-      alert("Missing sender or audio");
+    if (!audioBlob) {
+      alert("Missing audio");
       return;
     }
 
     setSending(true);
 
     try {
-      await uploadAudioToBackend(audioBlob, sender);
+      if (!window.BotExtension) {
+        alert("BotExtension not available");
+        return;
+      }
 
-      alert("Recording sent successfully!");
+      window.BotExtension.getPayload(async (data) => {
+        const sender = data?.value;
 
-      // Close SwiftChat WebView
-      closeWebView(); // or window.BotExtension.close()
+        if (!sender) {
+          alert("Sender not found");
+          return;
+        }
+
+        await uploadAudioToBackend(audioBlob, sender);
+
+        alert("Recording sent successfully!");
+
+        window.BotExtension.close();
+      });
     } catch (err) {
       console.error(err);
       alert("Upload failed");
