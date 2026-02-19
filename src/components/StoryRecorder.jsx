@@ -537,34 +537,69 @@ const StoryRecorder = ({ details = {} }) => {
   };
 
   const handleFinalSubmit = async () => {
-    if (!audioBlob) {
-      alert("No audio recorded");
-      return;
-    }
+  if (!audioBlob) {
+    alert("No audio recorded");
+    return;
+  }
 
-    setSending(true);
+  setSending(true);
 
-    if (window.BotExtension?.getPayload) {
-      window.BotExtension.getPayload(async (userPhone) => {
-        console.log("User phone from payload:", userPhone);
+  // ⏳ Wait for SDK to become available
+  const waitForSDK = () =>
+    new Promise((resolve, reject) => {
+      let attempts = 0;
 
-        try {
-          await uploadAudioToBackend(audioBlob, userPhone.value);
-
-          window.BotExtension.close();
-        } catch (err) {
-          console.error(err);
-          alert("Upload failed");
-          window.BotExtension.close();
+      const interval = setInterval(() => {
+        if (window.BotExtension?.getPayload) {
+          clearInterval(interval);
+          resolve(window.BotExtension);
         }
 
+        attempts++;
+        if (attempts > 30) { // wait max ~3 seconds
+          clearInterval(interval);
+          reject("SDK not ready");
+        }
+      }, 100);
+    });
+
+  try {
+    const sdk = await waitForSDK();
+
+    sdk.getPayload(async (userPhone) => {
+      console.log("User phone from payload:", userPhone);
+
+      if (!userPhone?.value) {
+        alert("Sender not found in payload");
         setSending(false);
-      });
-    } else {
-      alert("SDK not available");
+        return;
+      }
+
+      try {
+        await uploadAudioToBackend(audioBlob, userPhone.value);
+
+        // Close WebView after success
+        if (sdk.close) {
+          sdk.close();
+        } else {
+          window.history.back();
+        }
+
+      } catch (err) {
+        console.error("Upload failed:", err);
+        alert("Upload failed");
+      }
+
       setSending(false);
-    }
-  };
+    });
+
+  } catch (error) {
+    console.error("SDK load error:", error);
+    alert("SDK not available");
+    setSending(false);
+  }
+};
+
 
   return (
     <>
