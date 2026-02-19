@@ -2,7 +2,7 @@ export const getSenderFromBot = () => {
   return new Promise((resolve) => {
     if (window.BotExtension) {
       window.BotExtension.getPayload((data) => {
-        resolve(data.value);
+        resolve(data);
       });
     } else {
       resolve(null);
