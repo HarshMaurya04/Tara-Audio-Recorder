@@ -544,57 +544,34 @@ const StoryRecorder = ({ details = {} }) => {
 
   setSending(true);
 
-  // ⏳ Wait for SDK to become available
-  const waitForSDK = () =>
-    new Promise((resolve, reject) => {
-      let attempts = 0;
+  if (typeof window.BotExtension !== "undefined") {
 
-      const interval = setInterval(() => {
-        if (window.BotExtension?.getPayload) {
-          clearInterval(interval);
-          resolve(window.BotExtension);
-        }
-
-        attempts++;
-        if (attempts > 30) { // wait max ~3 seconds
-          clearInterval(interval);
-          reject("SDK not ready");
-        }
-      }, 100);
-    });
-
-  try {
-    const sdk = await waitForSDK();
-
-    sdk.getPayload(async (userPhone) => {
+    window.BotExtension.getPayload(async (userPhone) => {
       console.log("User phone from payload:", userPhone);
 
-      if (!userPhone?.value) {
+      if (!userPhone || !userPhone.value) {
         alert("Sender not found in payload");
         setSending(false);
         return;
       }
 
       try {
+        // 🔥 Upload audio
         await uploadAudioToBackend(audioBlob, userPhone.value);
 
-        // Close WebView after success
-        if (sdk.close) {
-          sdk.close();
-        } else {
-          window.history.back();
-        }
+        // ✅ Close WebView after success
+        window.BotExtension.close();
 
       } catch (err) {
         console.error("Upload failed:", err);
         alert("Upload failed");
+        window.BotExtension.close();
       }
 
       setSending(false);
     });
 
-  } catch (error) {
-    console.error("SDK load error:", error);
+  } else {
     alert("SDK not available");
     setSending(false);
   }
