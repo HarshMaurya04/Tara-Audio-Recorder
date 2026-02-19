@@ -558,45 +558,29 @@ const StoryRecorder = ({ details = {} }) => {
   };
 
   const handleFinalSubmit = async () => {
-    if (!audioBlob) {
-      alert("No audio recorded");
-      return;
-    }
+  if (!audioBlob) {
+    alert("No audio recorded");
+    return;
+  }
 
-    setSending(true);
+  if (typeof window.BotExtension === "undefined") {
+    alert("SDK not loaded");
+    return;
+  }
 
+  setSending(true);
+
+  window.BotExtension.getPayload(async (userPhone) => {
     try {
-      // ✅ Wait for SDK properly
-      const sdk = await waitForBotExtension();
-
-      sdk.getPayload(async (payload) => {
-        console.log("Payload received:", payload);
-
-        if (!payload || !payload.value) {
-          alert("Sender not found in payload");
-          setSending(false);
-          return;
-        }
-
-        try {
-          await uploadAudioToBackend(audioBlob, payload.value);
-
-          // Close WebView
-          sdk.close();
-        } catch (err) {
-          console.error("Upload failed:", err);
-          alert("Upload failed");
-          sdk.close();
-        }
-
-        setSending(false);
-      });
+      await uploadAudioToBackend(audioBlob, userPhone.value);
+      window.BotExtension.close();
     } catch (err) {
-      console.error("SDK error:", err);
-      alert("SDK not ready. Please try again.");
-      setSending(false);
+      console.error("Upload failed:", err);
+      window.BotExtension.close();
     }
-  };
+  });
+};
+
 
   return (
     <>
