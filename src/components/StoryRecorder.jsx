@@ -70,8 +70,6 @@ const StoryRecorder = ({ details = {} }) => {
     [],
   );
 
-  const [sender, setSender] = useState(null);
-
   const [isRecording, setIsRecording] = useState(false); // Is recording active?
   const [timer, setTimer] = useState(0); // Recording timer
   const [showText, setShowText] = useState(true); // Controls story visibility
@@ -106,35 +104,6 @@ const StoryRecorder = ({ details = {} }) => {
   const audioChunksRef = useRef([]);
   const audioContextRef = useRef(null);
   const dataArrayRef = useRef(null);
-
-  useEffect(() => {
-    const extractSender = () => {
-      // 1️⃣ Try SDK method (Full SwiftChat)
-      if (window.BotExtension?.getPayload) {
-        window.BotExtension.getPayload((data) => {
-          console.log("Payload from SDK:", data);
-          if (data) {
-            setSender(data.value || data);
-          }
-        });
-        return;
-      }
-
-      // 2️⃣ Fallback: URL param (SwiftChat Lite)
-      const params = new URLSearchParams(window.location.search);
-      const payloadFromURL = params.get("payload");
-
-      console.log("Payload from URL:", payloadFromURL);
-
-      if (payloadFromURL) {
-        setSender(payloadFromURL);
-      } else {
-        console.warn("No payload found from SDK or URL");
-      }
-    };
-
-    extractSender();
-  }, []);
 
   // Automatically adjusts font size so text fits inside story box
   const fitTextToContainer = useCallback(() => {
@@ -568,26 +537,33 @@ const StoryRecorder = ({ details = {} }) => {
   };
 
   const handleFinalSubmit = async () => {
-    if (!audioBlob || !sender) {
-      alert("Missing sender or audio");
+    if (!audioBlob) {
+      alert("No audio recorded");
       return;
     }
 
     setSending(true);
 
-    try {
-      await uploadAudioToBackend(audioBlob, sender);
+    if (window.BotExtension?.getPayload) {
+      window.BotExtension.getPayload(async (userPhone) => {
+        console.log("User phone from payload:", userPhone);
 
-      alert("Recording sent successfully!");
+        try {
+          await uploadAudioToBackend(audioBlob, userPhone.value);
 
-      // Close SwiftChat WebView
-      closeWebView(); // or window.BotExtension.close()
-    } catch (err) {
-      console.error(err);
-      alert("Upload failed");
+          window.BotExtension.close();
+        } catch (err) {
+          console.error(err);
+          alert("Upload failed");
+          window.BotExtension.close();
+        }
+
+        setSending(false);
+      });
+    } else {
+      alert("SDK not available");
+      setSending(false);
     }
-
-    setSending(false);
   };
 
   return (
