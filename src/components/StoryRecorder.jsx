@@ -536,47 +536,67 @@ const StoryRecorder = ({ details = {} }) => {
     }
   };
 
-  const handleFinalSubmit = async () => {
-  if (!audioBlob) {
-    alert("No audio recorded");
-    return;
-  }
+  const waitForBotExtension = () => {
+    return new Promise((resolve, reject) => {
+      let attempts = 0;
 
-  setSending(true);
+      const interval = setInterval(() => {
+        if (window.BotExtension && window.BotExtension.getPayload) {
+          clearInterval(interval);
+          resolve(window.BotExtension);
+        }
 
-  if (typeof window.BotExtension !== "undefined") {
+        attempts++;
 
-    window.BotExtension.getPayload(async (userPhone) => {
-      console.log("User phone from payload:", userPhone);
-
-      if (!userPhone || !userPhone.value) {
-        alert("Sender not found in payload");
-        setSending(false);
-        return;
-      }
-
-      try {
-        // 🔥 Upload audio
-        await uploadAudioToBackend(audioBlob, userPhone.value);
-
-        // ✅ Close WebView after success
-        window.BotExtension.close();
-
-      } catch (err) {
-        console.error("Upload failed:", err);
-        alert("Upload failed");
-        window.BotExtension.close();
-      }
-
-      setSending(false);
+        // wait up to 5 seconds
+        if (attempts > 50) {
+          clearInterval(interval);
+          reject("BotExtension SDK not loaded");
+        }
+      }, 100);
     });
+  };
 
-  } else {
-    alert("SDK not available");
-    setSending(false);
-  }
-};
+  const handleFinalSubmit = async () => {
+    if (!audioBlob) {
+      alert("No audio recorded");
+      return;
+    }
 
+    setSending(true);
+
+    try {
+      // ✅ Wait for SDK properly
+      const sdk = await waitForBotExtension();
+
+      sdk.getPayload(async (payload) => {
+        console.log("Payload received:", payload);
+
+        if (!payload || !payload.value) {
+          alert("Sender not found in payload");
+          setSending(false);
+          return;
+        }
+
+        try {
+          await uploadAudioToBackend(audioBlob, payload.value);
+
+          // Close WebView
+          sdk.close();
+        } catch (err) {
+          console.error("Upload failed:", err);
+          alert("Upload failed");
+          sdk.close();
+        }
+
+        setSending(false);
+      });
+    } catch (err) {
+      console.error("SDK error:", err);
+      alert("SDK not ready. Please try again.");
+      setSending(false);
+    }
+  };
 
   return (
     <>
