@@ -15,7 +15,6 @@ import {
   OutlinedInput,
   InputAdornment,
 } from "@mui/material";
-import { getSenderFromBot, closeWebView } from "../services/botExtension";
 import { uploadAudioToBackend } from "../services/api";
 
 import MicIcon from "@mui/icons-material/Mic";
@@ -109,13 +108,32 @@ const StoryRecorder = ({ details = {} }) => {
   const dataArrayRef = useRef(null);
 
   useEffect(() => {
-    const fetchSender = async () => {
-      const phone = await getSenderFromBot();
-      setSender(phone);
-      console.log("Sender from WebView:", phone);
+    const extractSender = () => {
+      // 1️⃣ Try SDK method (Full SwiftChat)
+      if (window.BotExtension?.getPayload) {
+        window.BotExtension.getPayload((data) => {
+          console.log("Payload from SDK:", data);
+          if (data) {
+            setSender(data.value || data);
+          }
+        });
+        return;
+      }
+
+      // 2️⃣ Fallback: URL param (SwiftChat Lite)
+      const params = new URLSearchParams(window.location.search);
+      const payloadFromURL = params.get("payload");
+
+      console.log("Payload from URL:", payloadFromURL);
+
+      if (payloadFromURL) {
+        setSender(payloadFromURL);
+      } else {
+        console.warn("No payload found from SDK or URL");
+      }
     };
 
-    fetchSender();
+    extractSender();
   }, []);
 
   // Automatically adjusts font size so text fits inside story box
@@ -540,6 +558,14 @@ const StoryRecorder = ({ details = {} }) => {
       setShowText(true);
     }
   }, [audioBlob]);
+
+  const closeWebView = () => {
+    if (window.BotExtension?.close) {
+      window.BotExtension.close();
+    } else {
+      window.history.back(); // fallback
+    }
+  };
 
   const handleFinalSubmit = async () => {
     if (!audioBlob || !sender) {
