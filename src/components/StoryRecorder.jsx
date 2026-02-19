@@ -109,13 +109,26 @@ const StoryRecorder = ({ details = {} }) => {
   const dataArrayRef = useRef(null);
 
   useEffect(() => {
-    const fetchSender = async () => {
-      const phone = await getSenderFromBot();
-      setSender(phone);
-      console.log("Sender from WebView:", phone);
+    const waitForPayload = () => {
+      if (!window.BotExtension || !window.BotExtension.getPayload) {
+        setTimeout(waitForPayload, 300);
+        return;
+      }
+
+      window.BotExtension.getPayload((data) => {
+        console.log("Payload received:", data);
+
+        if (data && (data.value || data)) {
+          // Support both formats
+          setSender(data.value || data);
+        } else {
+          // Retry if SDK responded but payload not yet available
+          setTimeout(waitForPayload, 300);
+        }
+      });
     };
 
-    fetchSender();
+    waitForPayload();
   }, []);
 
   // Automatically adjusts font size so text fits inside story box
