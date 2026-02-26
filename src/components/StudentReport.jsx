@@ -7,7 +7,7 @@ function StudentReport() {
   // HARDCODED FOR TESTING
   const userId = 30;
   const childId = 77;
-  const fileId = "019c8e50-39ea-727e-9dc8-dd9b7acf9c81";
+  const fileId = "019c5164-380c-7f6f-9e11-2658f45b2252";
 
   useEffect(() => {
     async function fetchReport() {
