@@ -14,6 +14,11 @@ import {
   MenuItem,
   OutlinedInput,
   InputAdornment,
+  Box,
+  Typography,
+  Paper,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { uploadAudioToBackend } from "../services/api";
 
@@ -28,55 +33,42 @@ const STORY_DATA = {
   text: `A dam is a wall built across a river. When it rains, a lot of water goes down the river and into the sea. The dam stops the water. The water then becomes a big lake behind the dam. Later this water is let out into the fields. There it helps crops like rice to grow.`,
 };
 
-// Default audio recording configuration
-const defaultMimeType = "audio/webm"; // Recording format
-const defaultBitrate = 64000; // Audio quality
-const maxRecordingTime = 60; // Max recording time (seconds)
-
-// Text auto-fit limits
-const minFontSize = 18;
+const defaultMimeType = "audio/webm";
+const defaultBitrate = 64000;
+const maxRecordingTime = 60;
+const minFontSize = 14;
 const maxFontSize = 30;
 
-// Exit fullscreen safely (cross-browser support)
 const exitFullscreen = () => {
-  if (document.exitFullscreen) {
-    document.exitFullscreen();
-  } else if (document.webkitExitFullscreen) {
-    document.webkitExitFullscreen(); // Safari
-  } else if (document.mozCancelFullScreen) {
-    document.mozCancelFullScreen(); // Firefox
-  } else if (document.msExitFullscreen) {
-    document.msExitFullscreen(); // IE/Edge
-  }
+  if (document.exitFullscreen) document.exitFullscreen();
+  else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+  else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
+  else if (document.msExitFullscreen) document.msExitFullscreen();
 };
 
-// Check if browser is currently in fullscreen mode
-const isFullscreen = () => {
-  return (
-    document.fullscreenElement ||
-    document.webkitFullscreenElement || // Safari
-    document.mozFullScreenElement || // Firefox
-    document.msFullscreenElement // IE/Edge
-  );
-};
+const isFullscreen = () =>
+  document.fullscreenElement ||
+  document.webkitFullscreenElement ||
+  document.mozFullScreenElement ||
+  document.msFullscreenElement;
 
 const StoryRecorder = ({ details = {} }) => {
   const story = STORY_DATA;
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
-  // Converts seconds into MM:SS format
   const formatTime = useCallback(
     (s) =>
       `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`,
     [],
   );
 
-  const [isRecording, setIsRecording] = useState(false); // Is recording active?
-  const [timer, setTimer] = useState(0); // Recording timer
-  const [showText, setShowText] = useState(true); // Controls story visibility
-  const [initializing, setInitializing] = useState(false); // Prevent double start
-  const [stopping, setStopping] = useState(false); // Stop delay state
+  const [isRecording, setIsRecording] = useState(false);
+  const [timer, setTimer] = useState(0);
+  const [showText, setShowText] = useState(true);
+  const [initializing, setInitializing] = useState(false);
+  const [stopping, setStopping] = useState(false);
 
-  // Permission & Device State
   const [recorderSupported, setRecorderSupported] = useState(true);
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [micModalOpen, setMicModalOpen] = useState(false);
@@ -84,20 +76,19 @@ const StoryRecorder = ({ details = {} }) => {
   const [inputDevicesLoading, setInputDevicesLoading] = useState(false);
   const [selectedDeviceId, setSelectedDeviceId] = useState(null);
 
-  const [audioBlob, setAudioBlob] = useState(null); // Final recorded blob
-  const [audioURL, setAudioURL] = useState(null); // For playback
-  const [submitted, setSubmitted] = useState(false); // Toggle between record view & review view
-  const [sending, setSending] = useState(false); // Submission loading
+  const [audioBlob, setAudioBlob] = useState(null);
+  const [audioURL, setAudioURL] = useState(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
 
-  const [dynamicFontSize, setDynamicFontSize] = useState(32); // Dynamic Text Fit
+  const [dynamicFontSize, setDynamicFontSize] = useState(24);
 
-  const storyContainerRef = useRef(null); // Story box DOM
-  const measureRef = useRef(null); // Hidden measurement div
-  const canvasRef = useRef(null); // Waveform canvas
-  const mediaRecorderRef = useRef(null); // MediaRecorder instance
-  const streamRef = useRef(null); // Mic stream
-  const analyserRef = useRef(null); // Audio analyser
-
+  const storyContainerRef = useRef(null);
+  const measureRef = useRef(null);
+  const canvasRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const streamRef = useRef(null);
+  const analyserRef = useRef(null);
   const isMountedRef = useRef(true);
   const animationRef = useRef(null);
   const timerIntervalRef = useRef(null);
@@ -105,21 +96,16 @@ const StoryRecorder = ({ details = {} }) => {
   const audioContextRef = useRef(null);
   const dataArrayRef = useRef(null);
 
-  // Automatically adjusts font size so text fits inside story box
   const fitTextToContainer = useCallback(() => {
     if (!storyContainerRef.current || !measureRef.current || !story.text)
       return;
-
     const container = storyContainerRef.current;
     const measurer = measureRef.current;
-
     const containerStyles = window.getComputedStyle(container);
-
     const paddingTop = parseFloat(containerStyles.paddingTop);
     const paddingBottom = parseFloat(containerStyles.paddingBottom);
     const paddingLeft = parseFloat(containerStyles.paddingLeft);
     const paddingRight = parseFloat(containerStyles.paddingRight);
-
     const availableWidth = container.clientWidth - paddingLeft - paddingRight;
     const availableHeight = container.clientHeight - paddingTop - paddingBottom;
 
@@ -131,17 +117,14 @@ const StoryRecorder = ({ details = {} }) => {
     measurer.style.padding = "0";
     measurer.style.margin = "0";
     measurer.style.border = "none";
-
     measurer.textContent = story.text;
 
     let min = minFontSize;
     let max = maxFontSize;
     let best = minFontSize;
-
     while (min <= max) {
       const mid = Math.floor((min + max) / 2);
       measurer.style.fontSize = `${mid}px`;
-
       if (measurer.scrollHeight <= availableHeight) {
         best = mid;
         min = mid + 1;
@@ -149,107 +132,79 @@ const StoryRecorder = ({ details = {} }) => {
         max = mid - 1;
       }
     }
-
     setDynamicFontSize(best);
   }, [story.text]);
 
   useEffect(() => {
-    requestAnimationFrame(() => {
-      fitTextToContainer();
-    });
-
+    requestAnimationFrame(() => fitTextToContainer());
     window.addEventListener("resize", fitTextToContainer);
-
-    return () => {
-      window.removeEventListener("resize", fitTextToContainer);
-    };
+    return () => window.removeEventListener("resize", fitTextToContainer);
   }, [fitTextToContainer]);
 
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
-      // exit fullscreen on unmount
       if (isFullscreen()) exitFullscreen();
     };
   }, []);
 
-  // Central cleanup for recording resources
   const cleanupRecording = () => {
     if (streamRef.current) {
-      // Stop and clean up audio stream
-      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
     if (audioContextRef.current) {
-      // Close audio context
-      if (audioContextRef.current.state !== "closed") {
+      if (audioContextRef.current.state !== "closed")
         audioContextRef.current.close();
-      }
       audioContextRef.current = null;
     }
     if (animationRef.current) {
-      // Cancel animation frame
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
     }
     if (timerIntervalRef.current) {
-      // Clear timer interval
       clearInterval(timerIntervalRef.current);
       timerIntervalRef.current = null;
     }
     if (mediaRecorderRef.current) {
-      // Clear MediaRecorder context
-      if (mediaRecorderRef.current.state !== "inactive") {
-        mediaRecorderRef.current.stop(); // stop if recording
-      }
+      if (mediaRecorderRef.current.state !== "inactive")
+        mediaRecorderRef.current.stop();
       mediaRecorderRef.current = null;
     }
     setTimer(0);
   };
 
   const loadInputDevices = useCallback(async () => {
-    setInputDevicesLoading(true); // Start loading
+    setInputDevicesLoading(true);
     const devices = await navigator.mediaDevices.enumerateDevices();
-    const audioInputs = devices.filter(
-      (device) => device.kind === "audioinput",
-    );
-    const filtered = audioInputs.filter((device) => {
-      // Remove empty labels
-      const label = device.label?.trim();
+    const audioInputs = devices.filter((d) => d.kind === "audioinput");
+    const filtered = audioInputs.filter((d) => {
+      const label = d.label?.trim();
       if (!label) return false;
-      // Exclude common "virtual" or "default" device names if you want
-      const lowerLabel = device.label.toLowerCase();
+      const lower = d.label.toLowerCase();
       if (
-        lowerLabel.includes("virtual") ||
-        lowerLabel.includes("stereo mix") ||
-        lowerLabel.includes("default") ||
-        lowerLabel.includes("communications device") ||
-        lowerLabel.includes("communications")
+        lower.includes("virtual") ||
+        lower.includes("stereo mix") ||
+        lower.includes("default") ||
+        lower.includes("communications device") ||
+        lower.includes("communications")
       )
         return false;
       return true;
     });
-    // Remove duplicates by label
     const uniqueDevices = [];
-    filtered.forEach((device) => {
-      if (!uniqueDevices.some((d) => d.label === device.label)) {
-        uniqueDevices.push(device);
-      }
+    filtered.forEach((d) => {
+      if (!uniqueDevices.some((u) => u.label === d.label))
+        uniqueDevices.push(d);
     });
-    // Sort by label
     uniqueDevices.sort((a, b) => a.label.localeCompare(b.label));
-
     setInputDevices(uniqueDevices);
-    setInputDevicesLoading(false); // Done loading
+    setInputDevicesLoading(false);
 
-    // Attempt to retrieve previously selected mic device ID from localStorage
     const savedDeviceId = localStorage.getItem("selectedMicDeviceId");
     const foundDevice = uniqueDevices.find((d) => d.deviceId === savedDeviceId);
-
-    // If saved device ID exists and is found in current device list, restore selection
     if (savedDeviceId && foundDevice) {
-      // Only set if different
       setSelectedDeviceId((prev) =>
         prev !== savedDeviceId ? savedDeviceId : prev,
       );
@@ -261,21 +216,18 @@ const StoryRecorder = ({ details = {} }) => {
       const fallbackId = uniqueDevices[0]?.deviceId;
       if (fallbackId) setSelectedDeviceId(fallbackId);
     } else if (!savedDeviceId && uniqueDevices.length > 0) {
-      // Only set a mic if no mic is currently selected or selected mic is now missing
       setSelectedDeviceId((prev) => {
         const stillValid = uniqueDevices.some((d) => d.deviceId === prev);
         if (!stillValid) {
-          if (prev !== null) {
+          if (prev !== null)
             alert(
               "Selected microphone is no longer available. Switching to a default microphone.",
             );
-          }
           return uniqueDevices[0]?.deviceId || null;
         }
         return prev;
       });
     }
-    // return true if valid devices are found
     return uniqueDevices.length > 0;
   }, []);
 
@@ -284,15 +236,13 @@ const StoryRecorder = ({ details = {} }) => {
       setRecorderSupported(false);
       return;
     }
-
     if (typeof MediaRecorder === "undefined") {
       setRecorderSupported(false);
       return;
     }
-
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach((track) => track.stop());
+      stream.getTracks().forEach((t) => t.stop());
       const hasDevices = await loadInputDevices();
       setPermissionGranted(hasDevices);
     } catch {
@@ -302,24 +252,19 @@ const StoryRecorder = ({ details = {} }) => {
 
   useEffect(() => {
     checkSupportAndPermission();
-
-    return () => {
-      cleanupRecording();
-    };
+    return () => cleanupRecording();
   }, [checkSupportAndPermission]);
 
   const requestMicPermission = useCallback(() => {
     navigator.mediaDevices
       .getUserMedia({ audio: true })
       .then(async (stream) => {
-        stream.getTracks().forEach((track) => track.stop());
+        stream.getTracks().forEach((t) => t.stop());
         const hasDevices = await loadInputDevices();
         setPermissionGranted(hasDevices);
       })
       .catch((e) => {
-        console.log("mic permission error: ", e);
         setPermissionGranted(false);
-        // Show an alert on explicit denial
         if (e.name === "NotAllowedError" || e.name === "SecurityError") {
           alert(
             "Microphone access was denied. Please allow microphone permission in your browser settings.",
@@ -335,24 +280,18 @@ const StoryRecorder = ({ details = {} }) => {
     const ctx = canvas?.getContext("2d");
     const analyser = analyserRef.current;
     const dataArray = dataArrayRef.current;
-
     if (!canvas || !ctx || !analyser || !dataArray) return;
-
     const bufferLength = analyser.fftSize;
-
     const draw = () => {
       if (!analyserRef.current || !dataArrayRef.current || !canvasRef.current)
         return;
-
       animationRef.current = requestAnimationFrame(draw);
-
       analyser.getByteTimeDomainData(dataArray);
       ctx.fillStyle = "#f9f9f9";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.lineWidth = 2;
       ctx.strokeStyle = "#0077cc";
       ctx.beginPath();
-
       const sliceWidth = canvas.width / bufferLength;
       let x = 0;
       for (let i = 0; i < bufferLength; i++) {
@@ -361,11 +300,9 @@ const StoryRecorder = ({ details = {} }) => {
         i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
         x += sliceWidth;
       }
-
       ctx.lineTo(canvas.width, canvas.height / 2);
       ctx.stroke();
     };
-
     draw();
   };
 
@@ -374,76 +311,60 @@ const StoryRecorder = ({ details = {} }) => {
       setMicModalOpen(true);
       return;
     }
-    // Prevent duplicate starts
     if (isRecording || initializing) return;
-
     setAudioBlob(null);
     setAudioURL(null);
     setInitializing(true);
     setShowText(true);
     setTimer(0);
-
     try {
       const options = {
         mimeType: defaultMimeType,
         audioBitsPerSecond: defaultBitrate,
       };
-
       if (!MediaRecorder.isTypeSupported(options.mimeType)) {
         alert(`MIME type not supported: ${options.mimeType}`);
         stopRecording();
         return;
       }
-
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
         },
       });
-      const trackSettings = stream.getAudioTracks()[0]?.getSettings?.() || null;
       setIsRecording(true);
       streamRef.current = stream;
       audioChunksRef.current = [];
-
       audioContextRef.current = new (
         window.AudioContext || window.webkitAudioContext
       )();
       const source = audioContextRef.current.createMediaStreamSource(stream);
       analyserRef.current = audioContextRef.current.createAnalyser();
-      analyserRef.current.fftSize = 1024; // decrease this if high res is not needed to 1024 or 512
+      analyserRef.current.fftSize = 1024;
       dataArrayRef.current = new Uint8Array(analyserRef.current.fftSize);
       source.connect(analyserRef.current);
-
       drawWaveform();
-
       const mediaRecorder = new MediaRecorder(stream, options);
       mediaRecorderRef.current = mediaRecorder;
-
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
-
       mediaRecorder.onstop = async () => {
         const blob = new Blob(audioChunksRef.current, {
           type: options.mimeType,
         });
-
         setAudioBlob(blob);
         setAudioURL(URL.createObjectURL(blob));
-
-        if (isMountedRef.current) {
-          setStopping(false);
-        }
+        if (isMountedRef.current) setStopping(false);
         audioChunksRef.current = [];
-        cleanupRecording(); // <-- Centralized cleanup
+        cleanupRecording();
       };
-
       mediaRecorder.start();
     } catch (err) {
       console.error("Recording error:", err);
       alert("Microphone access failed.");
       setIsRecording(false);
-      cleanupRecording(); // <-- On error cleanup
+      cleanupRecording();
     } finally {
       setInitializing(false);
     }
@@ -454,9 +375,8 @@ const StoryRecorder = ({ details = {} }) => {
       if (mediaRecorderRef.current && isRecording) {
         setStopping(true);
         setIsRecording(false);
-        // Delay stopping by 1 second
         setTimeout(() => {
-          setShowText(false); // hide text after recording stops
+          setShowText(false);
           mediaRecorderRef.current?.stop();
         }, 1000);
       }
@@ -466,129 +386,85 @@ const StoryRecorder = ({ details = {} }) => {
     }
   }, [isRecording]);
 
-  // Modal close handler
-  const closeMicModal = () => {
-    setMicModalOpen(false);
-  };
-
   useEffect(() => {
     if (!navigator.mediaDevices?.addEventListener) return;
-
     const handleDeviceChange = async () => {
       await loadInputDevices();
     };
-
     navigator.mediaDevices.addEventListener("devicechange", handleDeviceChange);
-
-    return () => {
+    return () =>
       navigator.mediaDevices.removeEventListener(
         "devicechange",
         handleDeviceChange,
       );
-    };
   }, [loadInputDevices]);
 
   useEffect(() => {
     if (!isRecording) return;
-    // Timer interval - increments every second
     const intervalId = setInterval(() => {
       setTimer((prev) => {
         const next = prev + 1;
         if (next > maxRecordingTime) {
-          // your max recording time
           stopRecording();
-          return prev; // prevent timer going beyond max
+          return prev;
         }
         return next;
       });
     }, 1000);
-
     return () => clearInterval(intervalId);
   }, [isRecording, stopRecording]);
 
   useEffect(() => {
     if (!isRecording) return;
-    // Stop recording if tab becomes inactive
     const handleVisibilityChange = () => {
-      if (document.hidden) {
-        stopRecording();
-      }
+      if (document.hidden) stopRecording();
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
+    return () =>
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
   }, [isRecording, stopRecording]);
 
-  // When audioBlob becomes null (Retry clicked), show story text again
   useEffect(() => {
-    if (!audioBlob) {
-      setShowText(true);
-    }
+    if (!audioBlob) setShowText(true);
   }, [audioBlob]);
 
-  const closeWebView = () => {
-    if (window.BotExtension?.close) {
-      window.BotExtension.close();
-    } else {
-      window.history.back(); // fallback
-    }
-  };
-
-  const waitForBotExtension = () => {
-    return new Promise((resolve, reject) => {
+  const waitForBotExtension = () =>
+    new Promise((resolve, reject) => {
       let attempts = 0;
-
       const interval = setInterval(() => {
-        if (window.BotExtension && window.BotExtension.getPayload) {
+        if (window.BotExtension?.getPayload) {
           clearInterval(interval);
           resolve(window.BotExtension);
         }
-
-        attempts++;
-
-        // wait up to 5 seconds
-        if (attempts > 50) {
+        if (++attempts > 50) {
           clearInterval(interval);
           reject("BotExtension SDK not loaded");
         }
       }, 100);
     });
-  };
 
   const handleFinalSubmit = async () => {
     if (!audioBlob) {
       alert("No audio recorded");
       return;
     }
-
     setSending(true);
-
     try {
-      // ✅ Wait for SDK properly
       const sdk = await waitForBotExtension();
-
       sdk.getPayload(async (payload) => {
-        console.log("Payload received:", payload);
-
-        if (!payload || !payload.value) {
+        if (!payload?.value) {
           alert("Sender not found in payload");
           setSending(false);
           return;
         }
-
         try {
           await uploadAudioToBackend(audioBlob, payload.value);
-
-          // Close WebView
           sdk.close();
         } catch (err) {
           console.error("Upload failed:", err);
           alert("Upload failed");
           sdk.close();
         }
-
         setSending(false);
       });
     } catch (err) {
@@ -598,520 +474,481 @@ const StoryRecorder = ({ details = {} }) => {
     }
   };
 
-  return (
-    <>
-      {!submitted ? (
-        <div
-          style={{
-            minHeight: "100vh",
+  // ── Mic Permission Modal ─────────────────────────────────────────
+  const MicModal = (
+    <Dialog
+      open={micModalOpen}
+      onClose={() => setMicModalOpen(false)}
+      maxWidth="sm"
+      fullWidth
+    >
+      <DialogTitle>
+        <b>Microphone Settings</b>
+        <IconButton
+          onClick={() => setMicModalOpen(false)}
+          sx={{ position: "absolute", right: 8, top: 8 }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent dividers>
+        {!recorderSupported ? (
+          <Alert severity="error">
+            Your browser does not support audio recording.
+          </Alert>
+        ) : !permissionGranted ? (
+          <>
+            <Alert severity="error" sx={{ mb: 2 }}>
+              Please grant microphone access to use this feature.
+            </Alert>
+            <Button variant="contained" onClick={requestMicPermission}>
+              Enable Microphone
+            </Button>
+          </>
+        ) : inputDevicesLoading ? (
+          <Alert severity="info">Detecting microphones...</Alert>
+        ) : inputDevices.length === 0 ? (
+          <>
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              No microphone found. Please connect one and try again.
+            </Alert>
+            <Button
+              variant="contained"
+              color="warning"
+              size="small"
+              onClick={loadInputDevices}
+            >
+              Retry
+            </Button>
+          </>
+        ) : (
+          <FormControl fullWidth size="small">
+            <InputLabel id="mic-selector-label">Select Microphone</InputLabel>
+            <Select
+              labelId="mic-selector-label"
+              value={selectedDeviceId || ""}
+              onChange={(e) => {
+                const newId = e.target.value;
+                if (isRecording) stopRecording();
+                setSelectedDeviceId(newId);
+                localStorage.setItem("selectedMicDeviceId", newId);
+              }}
+              label="Select Microphone"
+              input={
+                <OutlinedInput
+                  label="Select Microphone"
+                  startAdornment={
+                    <InputAdornment position="start">
+                      <MicIcon fontSize="small" />
+                    </InputAdornment>
+                  }
+                />
+              }
+            >
+              {inputDevices.map((d) => (
+                <MenuItem key={d.deviceId} value={d.deviceId}>
+                  {d.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button
+          variant="contained"
+          onClick={() => setMicModalOpen(false)}
+          autoFocus
+        >
+          Done
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+
+  // ── Recording View ───────────────────────────────────────────────
+  if (!submitted) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          background: "#f4f6f9",
+          p: isMobile ? 1.5 : "20px",
+          boxSizing: "border-box",
+        }}
+      >
+        {MicModal}
+
+        <Paper
+          elevation={3}
+          sx={{
+            width: "100%",
+            maxWidth: 850,
+            borderRadius: isMobile ? "16px" : "24px",
+            p: isMobile ? "20px 16px" : "40px 80px",
             display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            background: "#f4f6f9",
-            padding: "20px",
-            boxSizing: "border-box",
+            flexDirection: "column",
+            gap: isMobile ? "16px" : "30px",
           }}
         >
-          <div
-            style={{
-              width: "100%",
-              maxWidth: "850px",
-              background: "#ffffff",
-              borderRadius: "24px",
-              padding: "40px 80px",
-              boxShadow: "0 15px 40px rgba(0,0,0,0.08)",
+          {/* ── Header row ── */}
+          <Box
+            sx={{
               display: "flex",
-              flexDirection: "column",
-              gap: "30px",
+              flexDirection: isMobile ? "column" : "row",
+              justifyContent: "space-between",
+              alignItems: isMobile ? "flex-start" : "center",
+              pb: 1.5,
+              borderBottom: "1px solid #eee",
+              gap: isMobile ? 0.5 : 1.5,
             }}
           >
-            {/* Mic Modal */}
-            <Dialog
-              open={micModalOpen}
-              onClose={closeMicModal}
-              aria-labelledby="mic-dialog-title"
-              role="dialog"
-              maxWidth="sm"
-              fullWidth
-            >
-              <DialogTitle id="mic-dialog-title">
-                <b>Microphone Settings</b>
-                <IconButton
-                  aria-label="Close Dialog"
-                  title="Close Dialog"
-                  onClick={closeMicModal}
-                  sx={{
-                    position: "absolute",
-                    right: 8,
-                    top: 8,
-                  }}
-                >
-                  <CloseIcon />
-                </IconButton>
-              </DialogTitle>
-              <DialogContent dividers aria-describedby="mic-dialog-description">
-                {!recorderSupported ? (
-                  <Alert severity="error">
-                    Your browser does not support audio recording.
-                  </Alert>
-                ) : !permissionGranted ? (
-                  <>
-                    <Alert severity="error" style={{ marginBottom: "1rem" }}>
-                      Please grant microphone access to use this feature.
-                    </Alert>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={requestMicPermission}
-                    >
-                      Enable Microphone
-                    </Button>
-                  </>
-                ) : inputDevicesLoading ? (
-                  <Alert severity="info">Detecting microphones...</Alert>
-                ) : inputDevices.length === 0 ? (
-                  <>
-                    <Alert severity="warning" style={{ marginBottom: "1rem" }}>
-                      No microphone found. Please connect one and try again.
-                    </Alert>
-                    <Button
-                      variant="contained"
-                      color="warning"
-                      size="small"
-                      onClick={loadInputDevices}
-                    >
-                      Retry
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <FormControl fullWidth size="small">
-                      <InputLabel id="mic-selector-label">
-                        Select Microphone
-                      </InputLabel>
-                      <Select
-                        labelId="mic-selector-label"
-                        aria-label="Select a microphone input"
-                        inputProps={{
-                          "aria-label": "Microphone device selector",
-                        }}
-                        id="mic-selector"
-                        value={selectedDeviceId || ""}
-                        onChange={(e) => {
-                          const newId = e.target.value;
-                          if (isRecording) stopRecording(); // Stop recording if currently recording
-                          setSelectedDeviceId(newId);
-                          localStorage.setItem("selectedMicDeviceId", newId); // persist on selection change
-                        }}
-                        label="Select Microphone"
-                        input={
-                          <OutlinedInput
-                            label="Select Microphone"
-                            startAdornment={
-                              <InputAdornment position="start">
-                                <MicIcon fontSize="small" />
-                              </InputAdornment>
-                            }
-                          />
-                        }
-                      >
-                        {inputDevices.map((device) => (
-                          <MenuItem
-                            key={device.deviceId}
-                            value={device.deviceId}
-                          >
-                            {device.label}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </>
-                )}
-              </DialogContent>
-              <DialogActions>
-                <Button variant="contained" onClick={closeMicModal} autoFocus>
-                  Done
-                </Button>
-              </DialogActions>
-            </Dialog>
-
-            {/* Top Info Row: Count | Title | Mic Info */}
-            <div
-              style={{
+            {/* Student details */}
+            <Box
+              sx={{
                 display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "10px 0",
-                borderBottom: "1px solid #eee",
-                marginBottom: 12,
-                flexWrap: "wrap",
-                gap: 12,
+                flexDirection: isMobile ? "column" : "row",
+                gap: isMobile ? 0.3 : 2,
+                flex: 1,
               }}
             >
-              {/* Story title */}
-              <div
-                style={{
+              <Typography
+                sx={{
+                  color: "#7ed46a",
+                  fontWeight: 600,
+                  fontSize: isMobile ? 13 : 14,
+                }}
+              >
+                {details.fullName}
+              </Typography>
+              <Typography sx={{ color: "#666", fontSize: isMobile ? 12 : 14 }}>
+                Class: {details.std} | Section: {details.divn} | Roll No:{" "}
+                {details.rollNo}
+              </Typography>
+            </Box>
+
+            {/* Story title + mic settings */}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: isMobile ? "space-between" : "center",
+                gap: 1,
+                width: isMobile ? "100%" : "auto",
+                mt: isMobile ? 0.5 : 0,
+              }}
+            >
+              <Typography
+                sx={{
                   fontWeight: "bold",
-                  fontSize: 16,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flex: 1,
+                  fontSize: isMobile ? 14 : 16,
                   color: "#333",
                 }}
               >
-                {/* Details */}
-                <div
-                  style={{
-                    fontSize: 14,
-                    color: "#666",
-                    display: "flex",
-                    alignItems: "center",
-                    flex: 1,
-                    justifyContent: "flex-start",
-                    gap: "1rem",
-                  }}
-                >
-                  <p style={{ color: "#7ed46a" }}>{details.fullName}</p>
-                  <p>
-                    Class: {details.std} | Section: {details.divn} | Roll No:{" "}
-                    {details.rollNo}
-                  </p>
-                </div>
+                {story.title || "Untitled Story"}
+              </Typography>
+              <IconButton
+                size="small"
+                color="info"
+                onClick={() => setMicModalOpen(true)}
+                title="Microphone Settings"
+              >
+                <SettingsIcon fontSize={isMobile ? "small" : "medium"} />
+              </IconButton>
+            </Box>
+          </Box>
 
-                {story.title ? story.title : "Untitled Story"}
+          {/* ── Story box ── */}
+          <Box
+            ref={storyContainerRef}
+            className={story.lang !== "EN" ? "font-devanagari" : undefined}
+            sx={{
+              backgroundColor: "#ffffff",
+              height: isMobile ? "200px" : "300px",
+              borderRadius: isMobile ? "12px" : "20px",
+              border: "3px solid #2f80ed",
+              boxShadow:
+                "0 4px 8px rgba(0,0,0,0.05), 0 15px 35px rgba(0,0,0,0.08)",
+              p: isMobile ? "20px 16px" : "50px 60px",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              textAlign: "center",
+              overflow: "hidden",
+            }}
+          >
+            {showText && (
+              <Typography
+                sx={{
+                  fontSize: dynamicFontSize,
+                  m: 0,
+                  color: "#7a7a7a",
+                  fontWeight: 500,
+                  lineHeight: 1.6,
+                }}
+              >
+                {story.text || "Your story paragraph here"}
+              </Typography>
+            )}
+          </Box>
 
-                {/* Mic info */}
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    flex: 1,
-                    justifyContent: "flex-end",
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <IconButton
-                    aria-label="Open microphone settings"
-                    size="small"
-                    color="info"
-                    onClick={() => setMicModalOpen(true)}
-                    sx={{ padding: "0 5px" }}
-                    title="Microphone Settings"
-                  >
-                    <SettingsIcon />
-                  </IconButton>
-                </div>
-              </div>
-            </div>
+          {/* ── Controls ── */}
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: isMobile ? "column" : "row",
+              alignItems: isMobile ? "stretch" : "center",
+              gap: isMobile ? 1.5 : 0,
+            }}
+          >
+            {/* Timer + waveform */}
+            <Box
+              sx={{
+                flex: isMobile ? "unset" : 1,
+                display: "flex",
+                alignItems: "center",
+                gap: 1.5,
+                justifyContent: isMobile ? "center" : "flex-start",
+              }}
+            >
+              <Typography
+                component="span"
+                sx={{
+                  fontSize: 16,
+                  width: 50,
+                  fontVariantNumeric: "tabular-nums",
+                }}
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                {formatTime(timer)}
+              </Typography>
+              <canvas
+                ref={canvasRef}
+                width={isMobile ? 160 : 200}
+                height={40}
+                style={{
+                  background: "linear-gradient(to bottom, #fff, #f1f1f1)",
+                  borderRadius: 4,
+                  border: "1px solid #ddd",
+                  maxWidth: "100%",
+                }}
+                aria-hidden="true"
+              />
+            </Box>
 
-            {/* Story Box */}
-            <div
-              ref={storyContainerRef}
-              className={story.lang !== "EN" ? "font-devanagari" : undefined}
-              style={{
-                backgroundColor: "#ffffff",
-                height: "300px",
-                borderRadius: "20px",
-                border: "3px solid #2f80ed",
-                boxShadow:
-                  "0 4px 8px rgba(0,0,0,0.05), 0 15px 35px rgba(0,0,0,0.08)",
-                padding: "50px 60px",
+            {/* Start / Stop / Finish buttons */}
+            <Box
+              sx={{
+                flex: isMobile ? "unset" : 1,
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
-                textAlign: "center",
+                gap: 2,
               }}
             >
-              {showText && (
-                <p
-                  style={{
-                    fontSize: dynamicFontSize,
-                    margin: 0,
-                    color: "#7a7a7a",
-                    fontWeight: 500,
-                    lineHeight: 1.6,
-                  }}
-                >
-                  {story.text || "Your story paragraph here"}
-                </p>
-              )}
-            </div>
-
-            {/* Control Row */}
-            <div
-              style={{ display: "flex", alignItems: "center", marginTop: 20 }}
-            >
-              {/* Left: Timer and waveform */}
-              <div
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "1rem",
-                }}
-              >
-                <span
-                  style={{ fontSize: 16, width: 50 }}
-                  aria-live="polite"
-                  aria-atomic="true"
-                >
-                  {formatTime(timer)}
-                </span>
-                <canvas
-                  ref={canvasRef}
-                  width={200}
-                  height={40}
-                  style={{
-                    background: "linear-gradient(to bottom, #fff, #f1f1f1)",
-                    borderRadius: 4,
-                    border: "1px solid #ddd",
-                  }}
-                  aria-hidden="true"
-                />
-              </div>
-
-              {/* Center: Start/Stop and Next/Submit */}
-              <div style={{ flex: 1, textAlign: "center" }}>
-                {!isRecording ? (
-                  <Button
-                    variant="contained"
-                    onClick={startRecording}
-                    disabled={
-                      initializing || stopping || isRecording || audioBlob
-                    }
-                    sx={{
-                      backgroundColor: "#007bff",
-                      borderRadius: "30px",
-                      textTransform: "none",
-                      fontWeight: "600",
-                      color: "#fff",
-                      boxShadow: "0 4px 10px rgba(0, 119, 255, 0.3)",
-                      transition: "all 0.2s ease-in-out",
-                      "&:hover": {
-                        backgroundColor: "#0066dd",
-                        boxShadow: "0 6px 14px rgba(0, 102, 221, 0.35)",
-                        transform: "scale(1.03)",
-                      },
-                    }}
-                  >
-                    {initializing ? (
-                      <CircularProgress
-                        size={20}
-                        sx={{ color: "#fff", display: "block" }}
-                      />
-                    ) : (
-                      "Start"
-                    )}
-                    {/* <CircularProgress size={20} sx={{ color: '#fff' }} />  */}
-                  </Button>
-                ) : (
-                  <Button
-                    variant="contained"
-                    // color="error"
-                    onClick={stopRecording}
-                    sx={{
-                      backgroundColor: "#ef5350", // red base for stop
-                      borderRadius: "30px",
-                      textTransform: "none",
-                      fontWeight: "600",
-                      color: "#fff",
-                      boxShadow: "0 4px 10px rgba(239, 83, 80, 0.3)",
-                      transition: "all 0.2s ease-in-out",
-                      "&:hover": {
-                        backgroundColor: "#d32f2f", // darker red on hover
-                        boxShadow: "0 6px 14px rgba(211, 47, 47, 0.35)",
-                        transform: "scale(1.03)",
-                      },
-                    }}
-                  >
-                    Stop
-                  </Button>
-                )}
-
-                {audioBlob && !isRecording && (
-                  <Button
-                    variant="contained"
-                    onClick={() => setSubmitted(true)}
-                    sx={{
-                      marginLeft: 2,
-                      backgroundColor: "#4caf50",
-                      borderRadius: "30px",
-                      textTransform: "none",
-                      fontWeight: "600",
-                      boxShadow: "0 4px 12px rgba(76,175,80,0.3)",
-                      "&:hover": {
-                        backgroundColor: "#43a047",
-                      },
-                    }}
-                  >
-                    Finish
-                  </Button>
-                )}
-              </div>
-
-              {/* RIGHT (empty for now if single recording) */}
-              <div style={{ flex: 1 }} />
-
-              {/* Right: Delete */}
-              {/* <div
-              style={{
-                flex: 1,
-                textAlign: "right",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "flex-end",
-                gap: "0.5rem",
-              }}
-            >
-              <IconButton
-                onClick={handleDelete}
-                disabled={!recordings[currentParaIndex] || uploaded}
-                color="error"
-                aria-label={`Delete recording for paragraph ${currentParaIndex + 1}`}
-                title="Delete this recording"
-              >
-                <DeleteIcon />
-              </IconButton>
-              
-              // Paragraph count 
-              <div
-                style={{ fontSize: 14, color: "#666", fontWeight: "bold" }}
-                aria-live="polite"
-              >
-                Paragraph {currentParaIndex + 1} / {paragraphs.length}
-                <LinearProgress
-                  variant="determinate"
-                  value={((currentParaIndex + 1) / paragraphs.length) * 100}
-                  aria-label="Recording progress"
-                  aria-valuenow={currentParaIndex + 1}
-                  aria-valuemin={1}
-                  aria-valuemax={paragraphs.length}
-                />
-              </div>
-            </div> */}
-            </div>
-          </div>
-          {/* Hidden measurer */}
-          <div
-            ref={measureRef}
-            className={story.lang !== "EN" ? "font-devanagari" : undefined}
-            style={{
-              position: "absolute",
-              visibility: "hidden",
-              zIndex: -1,
-              height: "auto",
-              width: "100%",
-              pointerEvents: "none",
-              whiteSpace: "pre-wrap",
-              wordWrap: "break-word",
-            }}
-          />
-        </div>
-      ) : (
-        <div
-          style={{
-            minHeight: "100vh",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            background: "#f4f6f9",
-            padding: "20px",
-            boxSizing: "border-box",
-          }}
-        >
-          <div
-            style={{
-              width: "100%",
-              maxWidth: "400px",
-              backgroundColor: "#ffffff",
-              padding: "48px 40px",
-              borderRadius: "28px",
-              boxShadow: "0 20px 50px rgba(0,0,0,0.08)",
-              textAlign: "center",
-            }}
-          >
-            {!sending ? (
-              <>
-                <h2 style={{ textAlign: "center", marginBottom: "40px" }}>
-                  Recorded Audio
-                </h2>
-
-                <div style={{ textAlign: "center" }}>
-                  {audioURL && (
-                    <audio controls src={audioURL} style={{ width: "100%" }} />
-                  )}
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    gap: "20px",
-                    marginTop: "30px",
-                  }}
-                >
-                  <Button
-                    variant="contained"
-                    sx={{
-                      backgroundColor: "#ef5350",
-                      borderRadius: "30px",
-                      textTransform: "none",
-                    }}
-                    onClick={() => {
-                      setAudioBlob(null);
-                      setAudioURL(null);
-                      setSubmitted(false);
-                    }}
-                  >
-                    Retry
-                  </Button>
-
-                  <Button
-                    variant="contained"
-                    sx={{
-                      backgroundColor: "#1976d2",
-                      borderRadius: "30px",
-                      textTransform: "none",
-                    }}
-                    onClick={handleFinalSubmit}
-                  >
-                    Submit Attempt
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <div style={{ textAlign: "center" }}>
-                <Alert severity="success" sx={{ mb: 3 }}>
-                  Recording uploaded successfully!
-                </Alert>
-
-                <h3>{details.fullName}</h3>
-                <p>has completed</p>
-                <strong>{story.title}</strong>
-
+              {!isRecording ? (
                 <Button
                   variant="contained"
+                  onClick={startRecording}
+                  disabled={
+                    initializing || stopping || isRecording || !!audioBlob
+                  }
+                  fullWidth={isMobile}
                   sx={{
-                    marginTop: "20px",
+                    backgroundColor: "#007bff",
                     borderRadius: "30px",
                     textTransform: "none",
-                  }}
-                  onClick={() => {
-                    setAudioBlob(null);
-                    setAudioURL(null);
-                    setSubmitted(false);
+                    fontWeight: 600,
+                    px: 4,
+                    boxShadow: "0 4px 10px rgba(0,119,255,0.3)",
+                    "&:hover": {
+                      backgroundColor: "#0066dd",
+                      boxShadow: "0 6px 14px rgba(0,102,221,0.35)",
+                      transform: "scale(1.03)",
+                    },
                   }}
                 >
-                  Record Again
+                  {initializing ? (
+                    <CircularProgress size={20} sx={{ color: "#fff" }} />
+                  ) : (
+                    "Start"
+                  )}
                 </Button>
-              </div>
+              ) : (
+                <Button
+                  variant="contained"
+                  onClick={stopRecording}
+                  fullWidth={isMobile}
+                  sx={{
+                    backgroundColor: "#ef5350",
+                    borderRadius: "30px",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    px: 4,
+                    boxShadow: "0 4px 10px rgba(239,83,80,0.3)",
+                    "&:hover": {
+                      backgroundColor: "#d32f2f",
+                      boxShadow: "0 6px 14px rgba(211,47,47,0.35)",
+                      transform: "scale(1.03)",
+                    },
+                  }}
+                >
+                  Stop
+                </Button>
+              )}
+
+              {audioBlob && !isRecording && (
+                <Button
+                  variant="contained"
+                  onClick={() => setSubmitted(true)}
+                  fullWidth={isMobile}
+                  sx={{
+                    backgroundColor: "#4caf50",
+                    borderRadius: "30px",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    px: 4,
+                    boxShadow: "0 4px 12px rgba(76,175,80,0.3)",
+                    "&:hover": { backgroundColor: "#43a047" },
+                  }}
+                >
+                  Finish
+                </Button>
+              )}
+            </Box>
+
+            {/* Spacer for desktop symmetry */}
+            {!isMobile && <Box sx={{ flex: 1 }} />}
+          </Box>
+        </Paper>
+
+        {/* Hidden measurer */}
+        <div
+          ref={measureRef}
+          className={story.lang !== "EN" ? "font-devanagari" : undefined}
+          style={{
+            position: "absolute",
+            visibility: "hidden",
+            zIndex: -1,
+            height: "auto",
+            width: "100%",
+            pointerEvents: "none",
+            whiteSpace: "pre-wrap",
+            wordWrap: "break-word",
+          }}
+        />
+      </Box>
+    );
+  }
+
+  // ── Review / Submit View ─────────────────────────────────────────
+  return (
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        background: "#f4f6f9",
+        p: isMobile ? 2 : "20px",
+        boxSizing: "border-box",
+      }}
+    >
+      <Paper
+        elevation={3}
+        sx={{
+          width: "100%",
+          maxWidth: isMobile ? "100%" : "400px",
+          p: isMobile ? "32px 20px" : "48px 40px",
+          borderRadius: isMobile ? "16px" : "28px",
+          textAlign: "center",
+        }}
+      >
+        {!sending ? (
+          <>
+            <Typography variant="h6" sx={{ mb: 4, fontWeight: 700 }}>
+              Recorded Audio
+            </Typography>
+
+            {audioURL && (
+              <audio
+                controls
+                src={audioURL}
+                style={{ width: "100%", marginBottom: 8 }}
+              />
             )}
-          </div>
-        </div>
-      )}
-    </>
+
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                gap: 2,
+                mt: 3,
+                flexWrap: "wrap",
+              }}
+            >
+              <Button
+                variant="contained"
+                fullWidth={isMobile}
+                sx={{
+                  backgroundColor: "#ef5350",
+                  borderRadius: "30px",
+                  textTransform: "none",
+                  px: 3,
+                }}
+                onClick={() => {
+                  setAudioBlob(null);
+                  setAudioURL(null);
+                  setSubmitted(false);
+                }}
+              >
+                Retry
+              </Button>
+              <Button
+                variant="contained"
+                fullWidth={isMobile}
+                sx={{
+                  backgroundColor: "#1976d2",
+                  borderRadius: "30px",
+                  textTransform: "none",
+                  px: 3,
+                }}
+                onClick={handleFinalSubmit}
+              >
+                Submit Attempt
+              </Button>
+            </Box>
+          </>
+        ) : (
+          <>
+            <Alert severity="success" sx={{ mb: 3 }}>
+              Recording uploaded successfully!
+            </Alert>
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              {details.fullName}
+            </Typography>
+            <Typography sx={{ my: 1 }}>has completed</Typography>
+            <Typography sx={{ fontWeight: 700 }}>{story.title}</Typography>
+            <Button
+              variant="contained"
+              fullWidth={isMobile}
+              sx={{ mt: 3, borderRadius: "30px", textTransform: "none", px: 3 }}
+              onClick={() => {
+                setAudioBlob(null);
+                setAudioURL(null);
+                setSubmitted(false);
+              }}
+            >
+              Record Again
+            </Button>
+          </>
+        )}
+      </Paper>
+    </Box>
   );
 };
 
