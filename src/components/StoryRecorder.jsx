@@ -14,6 +14,8 @@ import {
   MenuItem,
   OutlinedInput,
   InputAdornment,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { uploadAudioToBackend } from "../services/api";
 
@@ -62,6 +64,10 @@ const isFullscreen = () => {
 
 const StoryRecorder = ({ details = {} }) => {
   const story = STORY_DATA;
+
+  // ── Responsive helpers (styling only) ──────────────────────────
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   // Converts seconds into MM:SS format
   const formatTime = useCallback(
@@ -608,7 +614,7 @@ const StoryRecorder = ({ details = {} }) => {
             justifyContent: "center",
             alignItems: "center",
             background: "#f4f6f9",
-            padding: "20px",
+            padding: isMobile ? "12px" : "20px",
             boxSizing: "border-box",
           }}
         >
@@ -617,12 +623,12 @@ const StoryRecorder = ({ details = {} }) => {
               width: "100%",
               maxWidth: "850px",
               background: "#ffffff",
-              borderRadius: "24px",
-              padding: "40px 80px",
+              borderRadius: isMobile ? "16px" : "24px",
+              padding: isMobile ? "20px 16px" : "40px 80px",
               boxShadow: "0 15px 40px rgba(0,0,0,0.08)",
               display: "flex",
               flexDirection: "column",
-              gap: "30px",
+              gap: isMobile ? "16px" : "30px",
             }}
           >
             {/* Mic Modal */}
@@ -739,69 +745,85 @@ const StoryRecorder = ({ details = {} }) => {
             <div
               style={{
                 display: "flex",
+                flexDirection: isMobile ? "column" : "row",
                 justifyContent: "space-between",
-                alignItems: "center",
+                alignItems: isMobile ? "flex-start" : "center",
                 padding: "10px 0",
                 borderBottom: "1px solid #eee",
-                marginBottom: 12,
-                flexWrap: "wrap",
-                gap: 12,
+                marginBottom: isMobile ? 4 : 12,
+                gap: isMobile ? 6 : 12,
               }}
             >
               {/* Story title */}
               <div
                 style={{
                   fontWeight: "bold",
-                  fontSize: 16,
+                  fontSize: isMobile ? 14 : 16,
                   display: "flex",
-                  alignItems: "center",
+                  flexDirection: isMobile ? "column" : "row",
+                  alignItems: isMobile ? "flex-start" : "center",
                   justifyContent: "center",
                   flex: 1,
                   color: "#333",
+                  gap: isMobile ? 4 : 0,
                 }}
               >
                 {/* Details */}
                 <div
                   style={{
-                    fontSize: 14,
+                    fontSize: isMobile ? 12 : 14,
                     color: "#666",
                     display: "flex",
-                    alignItems: "center",
+                    flexDirection: isMobile ? "column" : "row",
+                    alignItems: isMobile ? "flex-start" : "center",
                     flex: 1,
                     justifyContent: "flex-start",
-                    gap: "1rem",
+                    gap: isMobile ? 2 : "1rem",
                   }}
                 >
-                  <p style={{ color: "#7ed46a" }}>{details.fullName}</p>
-                  <p>
+                  <p style={{ color: "#7ed46a", margin: 0 }}>
+                    {details.fullName}
+                  </p>
+                  <p style={{ margin: 0 }}>
                     Class: {details.std} | Section: {details.divn} | Roll No:{" "}
                     {details.rollNo}
                   </p>
                 </div>
 
-                {story.title ? story.title : "Untitled Story"}
-
-                {/* Mic info */}
+                {/* Story title + mic icon row on mobile */}
                 <div
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 6,
-                    flex: 1,
-                    justifyContent: "flex-end",
-                    flexWrap: "wrap",
+                    justifyContent: isMobile ? "space-between" : "center",
+                    width: isMobile ? "100%" : "auto",
+                    flex: isMobile ? "unset" : 1,
                   }}
                 >
-                  <IconButton
-                    aria-label="Open microphone settings"
-                    size="small"
-                    color="info"
-                    onClick={() => setMicModalOpen(true)}
-                    sx={{ padding: "0 5px" }}
-                    title="Microphone Settings"
+                  <span>{story.title ? story.title : "Untitled Story"}</span>
+
+                  {/* Mic info */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      flex: isMobile ? "unset" : 1,
+                      justifyContent: "flex-end",
+                      flexWrap: "wrap",
+                    }}
                   >
-                    <SettingsIcon />
-                  </IconButton>
+                    <IconButton
+                      aria-label="Open microphone settings"
+                      size="small"
+                      color="info"
+                      onClick={() => setMicModalOpen(true)}
+                      sx={{ padding: "0 5px" }}
+                      title="Microphone Settings"
+                    >
+                      <SettingsIcon />
+                    </IconButton>
+                  </div>
                 </div>
               </div>
             </div>
@@ -812,12 +834,12 @@ const StoryRecorder = ({ details = {} }) => {
               className={story.lang !== "EN" ? "font-devanagari" : undefined}
               style={{
                 backgroundColor: "#ffffff",
-                height: "300px",
-                borderRadius: "20px",
+                height: isMobile ? "70vh" : "300px",
+                borderRadius: isMobile ? "12px" : "20px",
                 border: "3px solid #2f80ed",
                 boxShadow:
                   "0 4px 8px rgba(0,0,0,0.05), 0 15px 35px rgba(0,0,0,0.08)",
-                padding: "50px 60px",
+                padding: isMobile ? "24px 20px" : "50px 60px",
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
@@ -841,7 +863,13 @@ const StoryRecorder = ({ details = {} }) => {
 
             {/* Control Row */}
             <div
-              style={{ display: "flex", alignItems: "center", marginTop: 20 }}
+              style={{
+                display: "flex",
+                flexDirection: isMobile ? "column" : "row",
+                alignItems: isMobile ? "stretch" : "center",
+                marginTop: isMobile ? 4 : 20,
+                gap: isMobile ? 12 : 0,
+              }}
             >
               {/* Left: Timer and waveform */}
               <div
@@ -849,6 +877,7 @@ const StoryRecorder = ({ details = {} }) => {
                   flex: 1,
                   display: "flex",
                   alignItems: "center",
+                  justifyContent: isMobile ? "center" : "flex-start",
                   gap: "1rem",
                 }}
               >
@@ -861,19 +890,28 @@ const StoryRecorder = ({ details = {} }) => {
                 </span>
                 <canvas
                   ref={canvasRef}
-                  width={200}
+                  width={isMobile ? 180 : 200}
                   height={40}
                   style={{
                     background: "linear-gradient(to bottom, #fff, #f1f1f1)",
                     borderRadius: 4,
                     border: "1px solid #ddd",
+                    maxWidth: "100%",
                   }}
                   aria-hidden="true"
                 />
               </div>
 
               {/* Center: Start/Stop and Next/Submit */}
-              <div style={{ flex: 1, textAlign: "center" }}>
+              <div
+                style={{
+                  flex: 1,
+                  textAlign: "center",
+                  display: "flex",
+                  justifyContent: "center",
+                  gap: 12,
+                }}
+              >
                 {!isRecording ? (
                   <Button
                     variant="contained"
@@ -881,6 +919,7 @@ const StoryRecorder = ({ details = {} }) => {
                     disabled={
                       initializing || stopping || isRecording || audioBlob
                     }
+                    fullWidth={isMobile}
                     sx={{
                       backgroundColor: "#007bff",
                       borderRadius: "30px",
@@ -904,13 +943,12 @@ const StoryRecorder = ({ details = {} }) => {
                     ) : (
                       "Start"
                     )}
-                    {/* <CircularProgress size={20} sx={{ color: '#fff' }} />  */}
                   </Button>
                 ) : (
                   <Button
                     variant="contained"
-                    // color="error"
                     onClick={stopRecording}
+                    fullWidth={isMobile}
                     sx={{
                       backgroundColor: "#ef5350", // red base for stop
                       borderRadius: "30px",
@@ -934,8 +972,9 @@ const StoryRecorder = ({ details = {} }) => {
                   <Button
                     variant="contained"
                     onClick={() => setSubmitted(true)}
+                    fullWidth={isMobile}
                     sx={{
-                      marginLeft: 2,
+                      marginLeft: isMobile ? 0 : 2,
                       backgroundColor: "#4caf50",
                       borderRadius: "30px",
                       textTransform: "none",
@@ -951,48 +990,11 @@ const StoryRecorder = ({ details = {} }) => {
                 )}
               </div>
 
-              {/* RIGHT (empty for now if single recording) */}
-              <div style={{ flex: 1 }} />
-
-              {/* Right: Delete */}
-              {/* <div
-              style={{
-                flex: 1,
-                textAlign: "right",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "flex-end",
-                gap: "0.5rem",
-              }}
-            >
-              <IconButton
-                onClick={handleDelete}
-                disabled={!recordings[currentParaIndex] || uploaded}
-                color="error"
-                aria-label={`Delete recording for paragraph ${currentParaIndex + 1}`}
-                title="Delete this recording"
-              >
-                <DeleteIcon />
-              </IconButton>
-              
-              // Paragraph count 
-              <div
-                style={{ fontSize: 14, color: "#666", fontWeight: "bold" }}
-                aria-live="polite"
-              >
-                Paragraph {currentParaIndex + 1} / {paragraphs.length}
-                <LinearProgress
-                  variant="determinate"
-                  value={((currentParaIndex + 1) / paragraphs.length) * 100}
-                  aria-label="Recording progress"
-                  aria-valuenow={currentParaIndex + 1}
-                  aria-valuemin={1}
-                  aria-valuemax={paragraphs.length}
-                />
-              </div>
-            </div> */}
+              {/* RIGHT spacer (desktop only) */}
+              {!isMobile && <div style={{ flex: 1 }} />}
             </div>
           </div>
+
           {/* Hidden measurer */}
           <div
             ref={measureRef}
@@ -1017,17 +1019,17 @@ const StoryRecorder = ({ details = {} }) => {
             justifyContent: "center",
             alignItems: "center",
             background: "#f4f6f9",
-            padding: "20px",
+            padding: isMobile ? "12px" : "20px",
             boxSizing: "border-box",
           }}
         >
           <div
             style={{
               width: "100%",
-              maxWidth: "400px",
+              maxWidth: isMobile ? "100%" : "400px",
               backgroundColor: "#ffffff",
-              padding: "48px 40px",
-              borderRadius: "28px",
+              padding: isMobile ? "32px 20px" : "48px 40px",
+              borderRadius: isMobile ? "16px" : "28px",
               boxShadow: "0 20px 50px rgba(0,0,0,0.08)",
               textAlign: "center",
             }}
@@ -1047,13 +1049,15 @@ const StoryRecorder = ({ details = {} }) => {
                 <div
                   style={{
                     display: "flex",
+                    flexDirection: isMobile ? "column" : "row",
                     justifyContent: "center",
-                    gap: "20px",
+                    gap: "16px",
                     marginTop: "30px",
                   }}
                 >
                   <Button
                     variant="contained"
+                    fullWidth={isMobile}
                     sx={{
                       backgroundColor: "#ef5350",
                       borderRadius: "30px",
@@ -1070,6 +1074,7 @@ const StoryRecorder = ({ details = {} }) => {
 
                   <Button
                     variant="contained"
+                    fullWidth={isMobile}
                     sx={{
                       backgroundColor: "#1976d2",
                       borderRadius: "30px",
@@ -1093,6 +1098,7 @@ const StoryRecorder = ({ details = {} }) => {
 
                 <Button
                   variant="contained"
+                  fullWidth={isMobile}
                   sx={{
                     marginTop: "20px",
                     borderRadius: "30px",
