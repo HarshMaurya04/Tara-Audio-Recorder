@@ -566,7 +566,7 @@ const StoryRecorder = ({ details = {} }) => {
     setSending(true);
 
     try {
-      // ✅ Wait for SDK properly
+      // Wait for SDK properly
       const sdk = await waitForBotExtension();
 
       sdk.getPayload(async (payload) => {
