@@ -566,7 +566,7 @@ const StoryRecorder = ({ details = {} }) => {
     setSending(true);
 
     try {
-      // Wait for SDK properly
+      // ✅ Wait for SDK properly
       const sdk = await waitForBotExtension();
 
       sdk.getPayload(async (payload) => {
@@ -618,11 +618,13 @@ const StoryRecorder = ({ details = {} }) => {
               maxWidth: "850px",
               background: "#ffffff",
               borderRadius: "24px",
-              padding: "40px 80px",
+              /* CHANGED: fluid padding — tight on mobile, original values on desktop */
+              padding: "clamp(20px, 4vw, 40px) clamp(16px, 5vw, 80px)",
               boxShadow: "0 15px 40px rgba(0,0,0,0.08)",
               display: "flex",
               flexDirection: "column",
-              gap: "30px",
+              gap: "clamp(16px, 3vw, 30px)",
+              boxSizing: "border-box",
             }}
           >
             {/* Mic Modal */}
@@ -812,16 +814,19 @@ const StoryRecorder = ({ details = {} }) => {
               className={story.lang !== "EN" ? "font-devanagari" : undefined}
               style={{
                 backgroundColor: "#ffffff",
-                height: "300px",
+                /* CHANGED: fluid height — 300px on desktop, shorter on small screens */
+                height: "clamp(220px, 45vw, 300px)",
                 borderRadius: "20px",
                 border: "3px solid #2f80ed",
                 boxShadow:
                   "0 4px 8px rgba(0,0,0,0.05), 0 15px 35px rgba(0,0,0,0.08)",
-                padding: "50px 60px",
+                /* CHANGED: fluid padding so text has breathing room on mobile */
+                padding: "clamp(20px, 4vw, 50px) clamp(16px, 5vw, 60px)",
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
                 textAlign: "center",
+                boxSizing: "border-box",
               }}
             >
               {showText && (
@@ -839,26 +844,47 @@ const StoryRecorder = ({ details = {} }) => {
               )}
             </div>
 
-            {/* Control Row */}
+            {/*
+              Control Row
+              CHANGED: Replaced the 3-column (left / center / right-spacer) layout with a
+              simple 2-part row: [timer + waveform] on the left, [buttons] on the right.
+              The old "center" + "right spacer" approach caused buttons to get pushed
+              off-screen on mobile. Now buttons are always right-aligned and never overflow.
+            */}
             <div
-              style={{ display: "flex", alignItems: "center", marginTop: 20 }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginTop: 8,
+                gap: 12,
+                flexWrap: "nowrap", // keep timer+waveform and buttons on the same line
+              }}
             >
               {/* Left: Timer and waveform */}
               <div
                 style={{
-                  flex: 1,
                   display: "flex",
                   alignItems: "center",
-                  gap: "1rem",
+                  gap: "0.75rem",
+                  flex: "1 1 auto",
+                  minWidth: 0,
+                  overflow: "hidden",
                 }}
               >
                 <span
-                  style={{ fontSize: 16, width: 50 }}
+                  style={{
+                    fontSize: 16,
+                    minWidth: 44,
+                    flexShrink: 0,
+                    fontVariantNumeric: "tabular-nums",
+                  }}
                   aria-live="polite"
                   aria-atomic="true"
                 >
                   {formatTime(timer)}
                 </span>
+                {/* CHANGED: canvas width is now fluid — shrinks on small screens */}
                 <canvas
                   ref={canvasRef}
                   width={200}
@@ -867,13 +893,23 @@ const StoryRecorder = ({ details = {} }) => {
                     background: "linear-gradient(to bottom, #fff, #f1f1f1)",
                     borderRadius: 4,
                     border: "1px solid #ddd",
+                    height: 40,
+                    width: "clamp(60px, 30vw, 200px)",
+                    flexShrink: 1,
                   }}
                   aria-hidden="true"
                 />
               </div>
 
-              {/* Center: Start/Stop and Next/Submit */}
-              <div style={{ flex: 1, textAlign: "center" }}>
+              {/* Right: Start/Stop + Finish — always stays right-aligned on one line */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  flexShrink: 0,
+                }}
+              >
                 {!isRecording ? (
                   <Button
                     variant="contained"
@@ -887,6 +923,7 @@ const StoryRecorder = ({ details = {} }) => {
                       textTransform: "none",
                       fontWeight: "600",
                       color: "#fff",
+                      minWidth: 76,
                       boxShadow: "0 4px 10px rgba(0, 119, 255, 0.3)",
                       transition: "all 0.2s ease-in-out",
                       "&:hover": {
@@ -904,23 +941,22 @@ const StoryRecorder = ({ details = {} }) => {
                     ) : (
                       "Start"
                     )}
-                    {/* <CircularProgress size={20} sx={{ color: '#fff' }} />  */}
                   </Button>
                 ) : (
                   <Button
                     variant="contained"
-                    // color="error"
                     onClick={stopRecording}
                     sx={{
-                      backgroundColor: "#ef5350", // red base for stop
+                      backgroundColor: "#ef5350",
                       borderRadius: "30px",
                       textTransform: "none",
                       fontWeight: "600",
                       color: "#fff",
+                      minWidth: 76,
                       boxShadow: "0 4px 10px rgba(239, 83, 80, 0.3)",
                       transition: "all 0.2s ease-in-out",
                       "&:hover": {
-                        backgroundColor: "#d32f2f", // darker red on hover
+                        backgroundColor: "#d32f2f",
                         boxShadow: "0 6px 14px rgba(211, 47, 47, 0.35)",
                         transform: "scale(1.03)",
                       },
@@ -935,11 +971,11 @@ const StoryRecorder = ({ details = {} }) => {
                     variant="contained"
                     onClick={() => setSubmitted(true)}
                     sx={{
-                      marginLeft: 2,
                       backgroundColor: "#4caf50",
                       borderRadius: "30px",
                       textTransform: "none",
                       fontWeight: "600",
+                      minWidth: 76,
                       boxShadow: "0 4px 12px rgba(76,175,80,0.3)",
                       "&:hover": {
                         backgroundColor: "#43a047",
@@ -950,47 +986,6 @@ const StoryRecorder = ({ details = {} }) => {
                   </Button>
                 )}
               </div>
-
-              {/* RIGHT (empty for now if single recording) */}
-              <div style={{ flex: 1 }} />
-
-              {/* Right: Delete */}
-              {/* <div
-              style={{
-                flex: 1,
-                textAlign: "right",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "flex-end",
-                gap: "0.5rem",
-              }}
-            >
-              <IconButton
-                onClick={handleDelete}
-                disabled={!recordings[currentParaIndex] || uploaded}
-                color="error"
-                aria-label={`Delete recording for paragraph ${currentParaIndex + 1}`}
-                title="Delete this recording"
-              >
-                <DeleteIcon />
-              </IconButton>
-              
-              // Paragraph count 
-              <div
-                style={{ fontSize: 14, color: "#666", fontWeight: "bold" }}
-                aria-live="polite"
-              >
-                Paragraph {currentParaIndex + 1} / {paragraphs.length}
-                <LinearProgress
-                  variant="determinate"
-                  value={((currentParaIndex + 1) / paragraphs.length) * 100}
-                  aria-label="Recording progress"
-                  aria-valuenow={currentParaIndex + 1}
-                  aria-valuemin={1}
-                  aria-valuemax={paragraphs.length}
-                />
-              </div>
-            </div> */}
             </div>
           </div>
           {/* Hidden measurer */}
