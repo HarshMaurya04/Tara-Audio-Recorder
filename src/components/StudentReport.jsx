@@ -402,14 +402,13 @@ export default function StudentReport() {
             px: isMobile ? 1.5 : 2.5,
             pt: isMobile ? 1 : 1.5,
             pb: isMobile ? 2 : 2.5,
-            "&::-webkit-scrollbar": { width: "4px" },
-            "&::-webkit-scrollbar-track": { background: "transparent" },
-            "&::-webkit-scrollbar-thumb": {
-              background: "#d0d0d0",
-              borderRadius: "4px",
+
+            // Hide scrollbar on all browsers
+            "&::-webkit-scrollbar": {
+              display: "none",
             },
-            scrollbarWidth: "thin",
-            scrollbarColor: "#d0d0d0 transparent",
+            scrollbarWidth: "none", // Firefox
+            msOverflowStyle: "none", // IE and old Edge
           }}
         >
           {/* Back button */}
