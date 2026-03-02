@@ -352,6 +352,7 @@ export default function StudentReport() {
         }
 
         const data = await res.json();
+        console.log("Lambda response:", data); 
         setReport(mapApiResponseToReport(data));
       } catch (err) {
         console.error("Report fetch error:", err);
