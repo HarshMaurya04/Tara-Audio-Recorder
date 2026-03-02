@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import {
-  Box,
   Typography,
   IconButton,
   Paper,
@@ -21,7 +20,6 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 
 // ─── CONFIG ────────────────────────────────────────────────────
-// Replace with your actual Lambda API Gateway endpoint
 const API_ENDPOINT =
   "https://i42u5elhm7.execute-api.ap-south-1.amazonaws.com/dev/webhook";
 
@@ -68,13 +66,12 @@ function mapApiResponseToReport(data) {
 // ─── Score Badge ────────────────────────────────────────────────
 function ScoreBadge({ label, value, compact = false }) {
   return (
-    <Box
-      sx={{
+    <div
+      style={{
         backgroundColor: "#0288d1",
         color: "white",
         borderRadius: "8px",
-        px: compact ? 1 : 1.5,
-        py: compact ? 0.6 : 1,
+        padding: compact ? "5px 8px" : "8px 12px",
         fontSize: compact ? "12px" : "14px",
         fontWeight: 500,
         display: "inline-flex",
@@ -83,7 +80,7 @@ function ScoreBadge({ label, value, compact = false }) {
       }}
     >
       {label}: {value}
-    </Box>
+    </div>
   );
 }
 
@@ -103,11 +100,17 @@ function MobileScoreGrid({ r }) {
   ];
 
   return (
-    <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0.8 }}>
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: "6px",
+      }}
+    >
       {scores.map(({ label, value }) => (
         <ScoreBadge key={label} label={label} value={value} compact />
       ))}
-    </Box>
+    </div>
   );
 }
 
@@ -116,15 +119,15 @@ function WordToken({ feedback, isMobile }) {
   const { promptWord, decodedWord, miscueLabel, pbLabel } = feedback;
   const fontSize = isMobile ? "14px" : "16px";
 
-  let wordSx = { fontSize, color: "#1a8a1a" };
+  let wordStyle = { fontSize, color: "#1a8a1a" };
   let displayWord = promptWord;
 
   if (miscueLabel === "s") {
-    wordSx = { fontSize, color: "orange" };
+    wordStyle = { fontSize, color: "orange" };
   } else if (miscueLabel === "d") {
-    wordSx = { fontSize, textDecoration: "line-through", color: "#555" };
+    wordStyle = { fontSize, textDecoration: "line-through", color: "#555" };
   } else if (miscueLabel === "i") {
-    wordSx = { fontSize, textDecoration: "underline", color: "#1a8a1a" };
+    wordStyle = { fontSize, textDecoration: "underline", color: "#1a8a1a" };
     displayWord = decodedWord || promptWord;
   }
 
@@ -133,11 +136,11 @@ function WordToken({ feedback, isMobile }) {
 
   return (
     <>
-      <Typography component="span" sx={wordSx}>
+      <Typography component="span" style={wordStyle}>
         {displayWord}{" "}
       </Typography>
       {pbColor && (
-        <Typography component="span" sx={{ fontSize, color: pbColor }}>
+        <Typography component="span" style={{ fontSize, color: pbColor }}>
           ||{" "}
         </Typography>
       )}
@@ -150,16 +153,15 @@ function AudioPlayer({ duration, isMobile }) {
   const [playing, setPlaying] = useState(false);
 
   return (
-    <Box
-      sx={{
+    <div
+      style={{
         display: "flex",
         alignItems: "center",
-        gap: 1,
+        gap: "8px",
         flex: 1,
         backgroundColor: "white",
         borderRadius: "30px",
-        px: isMobile ? 1.2 : 2,
-        py: 0.5,
+        padding: isMobile ? "4px 10px" : "4px 16px",
         boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
         minWidth: 0,
       }}
@@ -167,17 +169,19 @@ function AudioPlayer({ duration, isMobile }) {
       <IconButton
         size="small"
         onClick={() => setPlaying(!playing)}
-        sx={{ p: 0.4, flexShrink: 0 }}
+        style={{ padding: "3px", flexShrink: 0 }}
       >
         {playing ? (
-          <PauseIcon sx={{ fontSize: isMobile ? 18 : 20, color: "#333" }} />
+          <PauseIcon style={{ fontSize: isMobile ? 18 : 20, color: "#333" }} />
         ) : (
-          <PlayArrowIcon sx={{ fontSize: isMobile ? 18 : 20, color: "#333" }} />
+          <PlayArrowIcon
+            style={{ fontSize: isMobile ? 18 : 20, color: "#333" }}
+          />
         )}
       </IconButton>
       <Typography
         variant="caption"
-        sx={{
+        style={{
           color: "#555",
           whiteSpace: "nowrap",
           fontSize: isMobile ? "11px" : "12px",
@@ -185,7 +189,8 @@ function AudioPlayer({ duration, isMobile }) {
       >
         00:00/{duration}
       </Typography>
-      <Box sx={{ flex: 1, minWidth: 0 }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {/* LinearProgress uses sx here because it needs MUI's internal bar selector */}
         <LinearProgress
           variant="determinate"
           value={0}
@@ -196,25 +201,24 @@ function AudioPlayer({ duration, isMobile }) {
             "& .MuiLinearProgress-bar": { backgroundColor: "#bbb" },
           }}
         />
-      </Box>
+      </div>
       <FiberManualRecordIcon
-        sx={{ fontSize: 10, color: "#4caf50", flexShrink: 0 }}
+        style={{ fontSize: 10, color: "#4caf50", flexShrink: 0 }}
       />
-    </Box>
+    </div>
   );
 }
 
 // ─── Legend Row ──────────────────────────────────────────────────
-function LegendRow({ label, sx = {} }) {
+function LegendRow({ label, extraStyle = {} }) {
   return (
     <Typography
-      sx={{
+      style={{
         borderBottom: "1px solid #e0e0e0",
-        px: 1,
-        py: 0.75,
+        padding: "6px 8px",
         textAlign: "center",
         fontSize: "13px",
-        ...sx,
+        ...extraStyle,
       }}
     >
       {label}
@@ -222,84 +226,93 @@ function LegendRow({ label, sx = {} }) {
   );
 }
 
-// ─── Mobile Legend (horizontal pill row) ─────────────────────────
+// ─── Mobile Legend ───────────────────────────────────────────────
 function MobileLegend() {
   const items = [
-    { label: "Correct", sx: { color: "#1a8a1a" } },
-    { label: "Substitution", sx: { color: "orange" } },
+    { label: "Correct", extraStyle: { color: "#1a8a1a" } },
+    { label: "Substitution", extraStyle: { color: "orange" } },
     {
       label: "Deletion",
-      sx: { textDecoration: "line-through", color: "#555" },
+      extraStyle: { textDecoration: "line-through", color: "#555" },
     },
-    { label: "Insertion", sx: { textDecoration: "underline", color: "#555" } },
-    { label: "|| Correct", sx: { color: "#1a8a1a" } },
-    { label: "|| Improper", sx: { color: "red" } },
-    { label: "|| Missed", sx: { color: "orange" } },
+    {
+      label: "Insertion",
+      extraStyle: { textDecoration: "underline", color: "#555" },
+    },
+    { label: "|| Correct", extraStyle: { color: "#1a8a1a" } },
+    { label: "|| Improper", extraStyle: { color: "red" } },
+    { label: "|| Missed", extraStyle: { color: "orange" } },
   ];
 
   return (
-    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.8, mt: 1 }}>
-      {items.map(({ label, sx }) => (
-        <Box
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: "6px",
+        marginTop: "8px",
+      }}
+    >
+      {items.map(({ label, extraStyle }) => (
+        <div
           key={label}
-          sx={{
+          style={{
             border: "1px solid #e0e0e0",
             borderRadius: "20px",
-            px: 1.2,
-            py: 0.4,
+            padding: "3px 10px",
             fontSize: "12px",
             backgroundColor: "#fafafa",
-            ...sx,
+            ...extraStyle,
           }}
         >
           {label}
-        </Box>
+        </div>
       ))}
-    </Box>
+    </div>
   );
 }
 
 // ─── Loading State ───────────────────────────────────────────────
 function LoadingScreen() {
   return (
-    <Box
-      sx={{
+    <div
+      style={{
         position: "fixed",
         inset: 0,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        gap: 2,
+        gap: "16px",
         backgroundColor: "#e8eaf0",
       }}
     >
-      <CircularProgress sx={{ color: "#0288d1" }} />
-      <Typography sx={{ color: "#555", fontSize: 15 }}>
+      <CircularProgress style={{ color: "#0288d1" }} />
+      <Typography style={{ color: "#555", fontSize: 15 }}>
         Loading your report…
       </Typography>
-    </Box>
+    </div>
   );
 }
 
 // ─── Error State ─────────────────────────────────────────────────
 function ErrorScreen({ message }) {
   return (
-    <Box
-      sx={{
+    <div
+      style={{
         position: "fixed",
         inset: 0,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        p: 3,
+        padding: "24px",
         backgroundColor: "#e8eaf0",
       }}
     >
-      <Alert severity="error" sx={{ maxWidth: 500 }}>
+      <Alert severity="error" style={{ maxWidth: 500 }}>
         {message}
       </Alert>
-    </Box>
+    </div>
   );
 }
 
@@ -369,24 +382,24 @@ export default function StudentReport() {
   const r = report;
 
   return (
-    <Box
-      sx={{
+    <div
+      style={{
         position: "fixed",
         inset: 0,
         backgroundColor: "#e8eaf0",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        p: isMobile ? 1 : 3,
+        padding: isMobile ? "8px" : "24px",
       }}
     >
       <Paper
         elevation={3}
-        sx={{
+        style={{
           width: "100%",
           maxWidth: 1100,
           height: "100%",
-          borderRadius: isMobile ? 3 : 4,
+          borderRadius: isMobile ? "12px" : "16px",
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
@@ -394,30 +407,36 @@ export default function StudentReport() {
         }}
       >
         {/* ── Scrollable inner ── */}
-        <Box
-          sx={{
+        <div
+          style={{
             flex: 1,
             overflowY: "auto",
-            px: isMobile ? 1.5 : 2.5,
-            pt: isMobile ? 1 : 1.5,
-            pb: isMobile ? 2 : 2.5,
-            "&::-webkit-scrollbar": { display: "none" },
+            padding: isMobile ? "8px 12px 16px" : "12px 20px 20px",
             scrollbarWidth: "none",
             msOverflowStyle: "none",
           }}
         >
           {/* Back button */}
-          <IconButton sx={{ p: 0, color: "#0288d1", mb: isMobile ? 1 : 2 }}>
-            <ArrowBackIosNewIcon sx={{ fontSize: isMobile ? 22 : 26 }} />
+          <IconButton
+            style={{
+              padding: 0,
+              color: "#0288d1",
+              marginBottom: isMobile ? "8px" : "16px",
+            }}
+          >
+            <ArrowBackIosNewIcon style={{ fontSize: isMobile ? 22 : 26 }} />
           </IconButton>
 
           {/* ══ MOBILE LAYOUT ════════════════════════════════════ */}
           {isMobile ? (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-              <Typography sx={{ fontWeight: 700, fontSize: 16 }}>
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+            >
+              <Typography style={{ fontWeight: 700, fontSize: 16 }}>
                 Story Read: {r.storyTitle}
               </Typography>
 
+              {/* Scores accordion */}
               <Accordion
                 disableGutters
                 elevation={0}
@@ -432,7 +451,7 @@ export default function StudentReport() {
                   expandIcon={<ExpandMoreIcon />}
                   sx={{ minHeight: 44, px: 1.5 }}
                 >
-                  <Typography sx={{ fontWeight: 600, fontSize: 14 }}>
+                  <Typography style={{ fontWeight: 600, fontSize: 14 }}>
                     📊 Scores Overview
                   </Typography>
                 </AccordionSummary>
@@ -441,6 +460,7 @@ export default function StudentReport() {
                 </AccordionDetails>
               </Accordion>
 
+              {/* Legend accordion */}
               <Accordion
                 disableGutters
                 elevation={0}
@@ -454,9 +474,13 @@ export default function StudentReport() {
                   expandIcon={<ExpandMoreIcon />}
                   sx={{ minHeight: 44, px: 1.5 }}
                 >
-                  <Typography sx={{ fontWeight: 600, fontSize: 14 }}>
+                  <Typography style={{ fontWeight: 600, fontSize: 14 }}>
                     <InfoOutlinedIcon
-                      sx={{ fontSize: 16, mr: 0.5, verticalAlign: "middle" }}
+                      style={{
+                        fontSize: 16,
+                        marginRight: "4px",
+                        verticalAlign: "middle",
+                      }}
                     />
                     Word Legend
                   </Typography>
@@ -466,22 +490,27 @@ export default function StudentReport() {
                 </AccordionDetails>
               </Accordion>
 
+              {/* Paragraph cards */}
               {r.paraResults.map((para, index) => (
                 <Paper
                   key={para.paraNo}
                   elevation={0}
-                  sx={{ backgroundColor: "#f1f3f9", borderRadius: 3, p: 1.5 }}
+                  style={{
+                    backgroundColor: "#f1f3f9",
+                    borderRadius: "12px",
+                    padding: "12px",
+                  }}
                 >
-                  <Box
-                    sx={{
+                  <div
+                    style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: 1,
-                      mb: 1.2,
+                      gap: "8px",
+                      marginBottom: "10px",
                     }}
                   >
                     <Typography
-                      sx={{
+                      style={{
                         fontWeight: 700,
                         fontSize: 15,
                         whiteSpace: "nowrap",
@@ -493,43 +522,62 @@ export default function StudentReport() {
                       duration={`00:${(para.duration ?? "00:00").split(":")[1] ?? "00"}`}
                       isMobile
                     />
-                  </Box>
-                  <Box sx={{ lineHeight: 2.2 }}>
+                  </div>
+                  <div style={{ lineHeight: 2.2 }}>
                     {para.wordFeedback.map((feedback, i) => (
                       <WordToken key={i} feedback={feedback} isMobile />
                     ))}
-                  </Box>
+                  </div>
                 </Paper>
               ))}
-            </Box>
+            </div>
           ) : (
             /* ══ DESKTOP LAYOUT ══════════════════════════════════ */
-            <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-start" }}>
+            <div
+              style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}
+            >
               {/* Main column */}
-              <Box sx={{ flex: 1, minWidth: 0 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
                 <Paper
                   elevation={0}
-                  sx={{
+                  style={{
                     backgroundColor: "#f1f3f9",
-                    borderRadius: 3,
-                    p: 2,
-                    mb: 1.5,
+                    borderRadius: "12px",
+                    padding: "16px",
+                    marginBottom: "12px",
                   }}
                 >
-                  <Typography sx={{ fontWeight: 700, fontSize: 18, mb: 1.5 }}>
+                  <Typography
+                    style={{
+                      fontWeight: 700,
+                      fontSize: 18,
+                      marginBottom: "12px",
+                    }}
+                  >
                     Story Read: {r.storyTitle}
                   </Typography>
-                  <Box
-                    sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 1 }}
+
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "8px",
+                      marginBottom: "8px",
+                    }}
                   >
                     <ScoreBadge
                       label="Overall Score (A + P + Ph + Pr)"
                       value={r.overallScore}
                     />
                     <ScoreBadge label="WCPM" value={r.wcpm} />
-                  </Box>
-                  <Box
-                    sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 1 }}
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "8px",
+                      marginBottom: "8px",
+                    }}
                   >
                     <ScoreBadge
                       label="Accuracy Score (A)"
@@ -539,18 +587,28 @@ export default function StudentReport() {
                       label="Reading Accuracy"
                       value={`${r.readingAccuracy}%`}
                     />
-                  </Box>
-                  <Box
-                    sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 1 }}
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "8px",
+                      marginBottom: "8px",
+                    }}
                   >
                     <ScoreBadge label="Pace Score (P)" value={r.paceScore} />
                     <ScoreBadge
                       label="Pace"
                       value={`${r.pace} (${r.speechRate} syl/sec)`}
                     />
-                  </Box>
-                  <Box
-                    sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 1 }}
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "8px",
+                      marginBottom: "8px",
+                    }}
                   >
                     <ScoreBadge
                       label="Phrasing Score (Ph)"
@@ -564,36 +622,38 @@ export default function StudentReport() {
                       label="Missed Phrase Breaks"
                       value={r.missedPhraseBreaks}
                     />
-                  </Box>
-                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                  </div>
+                  <div
+                    style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}
+                  >
                     <ScoreBadge
                       label="Prominence Score (P)"
                       value={r.prominenceScore}
                     />
-                  </Box>
+                  </div>
                 </Paper>
 
                 {r.paraResults.map((para, index) => (
                   <Paper
                     key={para.paraNo}
                     elevation={0}
-                    sx={{
+                    style={{
                       backgroundColor: "#f1f3f9",
-                      borderRadius: 3,
-                      p: 2,
-                      mb: 1.5,
+                      borderRadius: "12px",
+                      padding: "16px",
+                      marginBottom: "12px",
                     }}
                   >
-                    <Box
-                      sx={{
+                    <div
+                      style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: 1.5,
-                        mb: 1.5,
+                        gap: "12px",
+                        marginBottom: "12px",
                       }}
                     >
                       <Typography
-                        sx={{
+                        style={{
                           fontWeight: 700,
                           fontSize: 18,
                           whiteSpace: "nowrap",
@@ -604,88 +664,102 @@ export default function StudentReport() {
                       <AudioPlayer
                         duration={`00:${(para.duration ?? "00:00").split(":")[1] ?? "00"}`}
                       />
-                    </Box>
-                    <Box sx={{ lineHeight: 2 }}>
+                    </div>
+                    <div style={{ lineHeight: 2 }}>
                       {para.wordFeedback.map((feedback, i) => (
                         <WordToken key={i} feedback={feedback} />
                       ))}
-                    </Box>
+                    </div>
                   </Paper>
                 ))}
-              </Box>
+              </div>
 
               {/* Sidebar */}
-              <Box
-                sx={{
-                  width: 200,
+              <div
+                style={{
+                  width: "200px",
                   flexShrink: 0,
                   display: "flex",
                   flexDirection: "column",
-                  gap: 2,
+                  gap: "16px",
                 }}
               >
                 <Paper
                   elevation={0}
-                  sx={{
+                  style={{
                     backgroundColor: "#f1f3f9",
-                    borderRadius: 3,
-                    px: 1.5,
-                    py: 1,
+                    borderRadius: "12px",
+                    padding: "8px 12px",
                   }}
                 >
-                  <Typography sx={{ fontWeight: 700 }}>
+                  <Typography style={{ fontWeight: 700 }}>
                     Attempt Summary :
                   </Typography>
                 </Paper>
                 <Paper
                   elevation={0}
-                  sx={{
+                  style={{
                     backgroundColor: "#f1f3f9",
-                    borderRadius: 3,
-                    px: 1.5,
-                    py: 1.5,
+                    borderRadius: "12px",
+                    padding: "12px",
                   }}
                 >
                   <Typography
-                    sx={{ fontWeight: 700, textAlign: "center", mb: 1 }}
+                    style={{
+                      fontWeight: 700,
+                      textAlign: "center",
+                      marginBottom: "8px",
+                    }}
                   >
                     Words Mistakes
                   </Typography>
-                  <LegendRow label="Correct" sx={{ color: "#1a8a1a" }} />
-                  <LegendRow label="Substitution" sx={{ color: "orange" }} />
+                  <LegendRow
+                    label="Correct"
+                    extraStyle={{ color: "#1a8a1a" }}
+                  />
+                  <LegendRow
+                    label="Substitution"
+                    extraStyle={{ color: "orange" }}
+                  />
                   <LegendRow
                     label="Deletion"
-                    sx={{ textDecoration: "line-through", color: "#333" }}
+                    extraStyle={{
+                      textDecoration: "line-through",
+                      color: "#333",
+                    }}
                   />
                   <LegendRow
                     label="Insertion"
-                    sx={{ textDecoration: "underline", color: "#333" }}
+                    extraStyle={{ textDecoration: "underline", color: "#333" }}
                   />
                   <Typography
-                    sx={{
+                    style={{
                       fontWeight: 700,
                       textAlign: "center",
-                      mt: 1.5,
-                      mb: 1,
+                      marginTop: "12px",
+                      marginBottom: "8px",
                     }}
                   >
                     Phase Breaks ||
                   </Typography>
-                  <LegendRow label="|| - Correct" sx={{ color: "#1a8a1a" }} />
+                  <LegendRow
+                    label="|| - Correct"
+                    extraStyle={{ color: "#1a8a1a" }}
+                  />
                   <LegendRow
                     label="|| - Improper Breaks"
-                    sx={{ color: "red" }}
+                    extraStyle={{ color: "red" }}
                   />
                   <LegendRow
                     label="|| - Missed Breaks"
-                    sx={{ color: "orange" }}
+                    extraStyle={{ color: "orange" }}
                   />
                 </Paper>
-              </Box>
-            </Box>
+              </div>
+            </div>
           )}
-        </Box>
+        </div>
       </Paper>
-    </Box>
+    </div>
   );
 }
