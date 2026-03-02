@@ -151,10 +151,11 @@ function WordToken({ feedback, isMobile }) {
 }
 
 // ─── Audio Player ────────────────────────────────────────────────
-function AudioPlayer({ duration, audioUrl, isMobile }) {
+function AudioPlayer({ audioUrl, isMobile }) {
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const [durationSec, setDurationSec] = useState(0);
   const audioRef = useRef(null);
 
   useEffect(() => {
@@ -162,9 +163,15 @@ function AudioPlayer({ duration, audioUrl, isMobile }) {
     if (!audio) return;
 
     const updateProgress = () => {
+      if (!audio.duration) return;
+
       const percent = (audio.currentTime / audio.duration) * 100;
-      setProgress(percent || 0);
+      setProgress(percent);
       setCurrentTime(audio.currentTime);
+    };
+
+    const handleLoadedMetadata = () => {
+      setDurationSec(audio.duration || 0);
     };
 
     const handleEnded = () => {
@@ -174,10 +181,12 @@ function AudioPlayer({ duration, audioUrl, isMobile }) {
     };
 
     audio.addEventListener("timeupdate", updateProgress);
+    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
     audio.addEventListener("ended", handleEnded);
 
     return () => {
       audio.removeEventListener("timeupdate", updateProgress);
+      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
       audio.removeEventListener("ended", handleEnded);
     };
   }, []);
@@ -195,6 +204,7 @@ function AudioPlayer({ duration, audioUrl, isMobile }) {
   };
 
   const formatTime = (seconds) => {
+    if (!seconds) return "00:00";
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins.toString().padStart(2, "0")}:${secs
@@ -211,8 +221,9 @@ function AudioPlayer({ duration, audioUrl, isMobile }) {
         flex: 1,
         backgroundColor: "white",
         borderRadius: "30px",
-        padding: isMobile ? "4px 10px" : "4px 16px",
+        padding: isMobile ? "4px 10px" : "6px 16px",
         boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
+        minHeight: "36px",
       }}
     >
       <audio ref={audioRef} src={audioUrl} />
@@ -225,8 +236,8 @@ function AudioPlayer({ duration, audioUrl, isMobile }) {
         )}
       </IconButton>
 
-      <Typography variant="caption">
-        {formatTime(currentTime)} / {duration}
+      <Typography variant="caption" style={{ minWidth: 80 }}>
+        {formatTime(currentTime)} / {formatTime(durationSec)}
       </Typography>
 
       <div style={{ flex: 1 }}>
@@ -234,7 +245,7 @@ function AudioPlayer({ duration, audioUrl, isMobile }) {
           value={progress}
           onChange={(e, newValue) => {
             const audio = audioRef.current;
-            if (!audio) return;
+            if (!audio || !audio.duration) return;
 
             const newTime = (newValue / 100) * audio.duration;
             audio.currentTime = newTime;
@@ -247,14 +258,14 @@ function AudioPlayer({ duration, audioUrl, isMobile }) {
               width: 12,
               height: 12,
             },
-            "& .MuiSlider-track": {
-              border: "none",
+            "& .MuiSlider-rail": {
+              opacity: 0.3,
             },
           }}
         />
       </div>
 
-      <FiberManualRecordIcon style={{ fontSize: 10, color: "#4caf50" }} />
+      <FiberManualRecordIcon style={{ fontSize: 8, color: "#4caf50" }} />
     </div>
   );
 }
@@ -569,11 +580,7 @@ export default function StudentReport() {
                     >
                       Para {index + 1}
                     </Typography>
-                    <AudioPlayer
-                      duration={`00:${(para.duration ?? "00:00").split(":")[1] ?? "00"}`}
-                      audioUrl={r.audioUrl}
-                      isMobile
-                    />
+                    <AudioPlayer audioUrl={r.audioUrl} isMobile />
                   </div>
                   <div style={{ lineHeight: 2.2 }}>
                     {para.wordFeedback.map((feedback, i) => (
@@ -713,10 +720,7 @@ export default function StudentReport() {
                       >
                         Paragraph {index + 1}
                       </Typography>
-                      <AudioPlayer
-                        duration={`00:${(para.duration ?? "00:00").split(":")[1] ?? "00"}`}
-                        audioUrl={r.audioUrl}
-                      />
+                      <AudioPlayer audioUrl={r.audioUrl} />
                     </div>
                     <div style={{ lineHeight: 2 }}>
                       {para.wordFeedback.map((feedback, i) => (
