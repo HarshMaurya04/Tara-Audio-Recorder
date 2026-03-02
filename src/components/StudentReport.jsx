@@ -240,7 +240,7 @@ function AudioPlayer({ audioUrl, isMobile }) {
         {formatTime(currentTime)} / {formatTime(durationSec)}
       </Typography>
 
-      <div style={{ flex: 1, alignItems: "center" }}>
+      <div style={{ flex: 1, alignItems: "center", display: "flex" }}>
         <Slider
           value={progress}
           onChange={(e, newValue) => {
