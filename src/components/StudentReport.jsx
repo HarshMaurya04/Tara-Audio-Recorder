@@ -265,7 +265,13 @@ function AudioPlayer({ audioUrl, isMobile }) {
         />
       </div>
 
-      <FiberManualRecordIcon style={{ fontSize: 8, color: "#4caf50" }} />
+      <FiberManualRecordIcon
+        style={{
+          fontSize: 8,
+          color: playing ? "#4caf50" : "#f44336", // green when playing, red when paused
+          transition: "color 0.3s ease",
+        }}
+      />
     </div>
   );
 }
