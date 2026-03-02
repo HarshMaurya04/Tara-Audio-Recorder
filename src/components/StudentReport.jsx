@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Typography,
   IconButton,
@@ -152,7 +152,7 @@ function WordToken({ feedback, isMobile }) {
 // ─── Audio Player ────────────────────────────────────────────────
 function AudioPlayer({ duration, audioUrl, isMobile }) {
   const [playing, setPlaying] = useState(false);
-  const audioRef = React.useRef(null);
+  const audioRef = useRef(null);
 
   const togglePlay = () => {
     if (!audioUrl) return;
