@@ -10,6 +10,8 @@ import {
   AccordionDetails,
   useMediaQuery,
   useTheme,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
@@ -18,137 +20,50 @@ import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 
-const hardcodedReport = {
-  storyTitle: "Rani's First Day at School",
-  overallScore: 8,
-  wcpm: 141,
-  accuracyScore: 4,
-  readingAccuracy: 100,
-  paceScore: 1,
-  pace: "Fast",
-  speechRate: 3.1,
-  phrasingScore: 2,
-  improperPhraseBreaks: 2,
-  missedPhraseBreaks: 2,
-  prominenceScore: 1,
-  paraResults: [
-    {
-      paraNo: 1,
-      duration: "00:45",
-      wordFeedback: [
-        { promptWord: "it", miscueLabel: "c", pbLabel: null },
-        { promptWord: "is", miscueLabel: "c", pbLabel: null },
-        { promptWord: "my", miscueLabel: "c", pbLabel: null },
-        { promptWord: "first", miscueLabel: "c", pbLabel: null },
-        { promptWord: "day", miscueLabel: "c", pbLabel: null },
-        { promptWord: "at", miscueLabel: "c", pbLabel: null },
-        { promptWord: "school", miscueLabel: "c", pbLabel: "c" },
-        { promptWord: "mummy", miscueLabel: "c", pbLabel: null },
-        { promptWord: "is", miscueLabel: "c", pbLabel: null },
-        { promptWord: "holding", miscueLabel: "c", pbLabel: null },
-        { promptWord: "my", miscueLabel: "c", pbLabel: null },
-        { promptWord: "hand", miscueLabel: "c", pbLabel: null },
-        { promptWord: "tightly", miscueLabel: "c", pbLabel: "c" },
-        { promptWord: "and", miscueLabel: "c", pbLabel: null },
-        { promptWord: "walking", miscueLabel: "c", pbLabel: null },
-        { promptWord: "with", miscueLabel: "c", pbLabel: null },
-        { promptWord: "me", miscueLabel: "c", pbLabel: "c" },
-        { promptWord: "there", miscueLabel: "c", pbLabel: null },
-        { promptWord: "are", miscueLabel: "c", pbLabel: null },
-        { promptWord: "many", miscueLabel: "c", pbLabel: null },
-        { promptWord: "children", miscueLabel: "c", pbLabel: null },
-        { promptWord: "near", miscueLabel: "c", pbLabel: null },
-        { promptWord: "the", miscueLabel: "c", pbLabel: null },
-        { promptWord: "school", miscueLabel: "c", pbLabel: "c" },
-        { promptWord: "they", miscueLabel: "c", pbLabel: null },
-        { promptWord: "come", miscueLabel: "c", pbLabel: null },
-        { promptWord: "by", miscueLabel: "c", pbLabel: null },
-        { promptWord: "bus", miscueLabel: "c", pbLabel: "i" },
-        { promptWord: "car", miscueLabel: "c", pbLabel: "i" },
-        { promptWord: "and", miscueLabel: "c", pbLabel: null },
-        { promptWord: "rickshaw", miscueLabel: "c", pbLabel: "c" },
-        { promptWord: "they", miscueLabel: "c", pbLabel: null },
-        { promptWord: "walk", miscueLabel: "c", pbLabel: "c" },
-        { promptWord: "like", miscueLabel: "c", pbLabel: null },
-        { promptWord: "me", miscueLabel: "c", pbLabel: "c" },
-        { promptWord: "we", miscueLabel: "c", pbLabel: null },
-        { promptWord: "reach", miscueLabel: "c", pbLabel: null },
-        { promptWord: "the", miscueLabel: "c", pbLabel: null },
-        { promptWord: "come", miscueLabel: "s", pbLabel: null },
-        { promptWord: "gate", miscueLabel: "c", pbLabel: null },
-        { promptWord: "mummy", miscueLabel: "c", pbLabel: null },
-        { promptWord: "lets", miscueLabel: "c", pbLabel: null },
-        { promptWord: "go", miscueLabel: "c", pbLabel: "i" },
-        { promptWord: "of", miscueLabel: "c", pbLabel: null },
-        { promptWord: "my", miscueLabel: "c", pbLabel: null },
-        { promptWord: "hand", miscueLabel: "c", pbLabel: "c" },
-        {
-          promptWord: "let go lets go now",
-          decodedWord: "let go lets go now",
-          miscueLabel: "i",
-          pbLabel: null,
-        },
-        { promptWord: "i", miscueLabel: "c", pbLabel: null },
-        { promptWord: "have", miscueLabel: "c", pbLabel: null },
-        { promptWord: "to", miscueLabel: "c", pbLabel: null },
-        { promptWord: "go", miscueLabel: "c", pbLabel: null },
-        { promptWord: "inside", miscueLabel: "c", pbLabel: null },
-        { promptWord: "alone", miscueLabel: "c", pbLabel: "c" },
-        { promptWord: "mummy", miscueLabel: "c", pbLabel: null },
-        { promptWord: "gets", miscueLabel: "c", pbLabel: null },
-        { promptWord: "smaller", miscueLabel: "c", pbLabel: null },
-        { promptWord: "as", miscueLabel: "c", pbLabel: null },
-        { promptWord: "i", miscueLabel: "c", pbLabel: null },
-        { promptWord: "walk", miscueLabel: "c", pbLabel: null },
-        { promptWord: "away", miscueLabel: "c", pbLabel: "c" },
-        { promptWord: "will", miscueLabel: "c", pbLabel: null },
-        { promptWord: "she", miscueLabel: "c", pbLabel: null },
-        { promptWord: "disappear", miscueLabel: "c", pbLabel: "c" },
-        { promptWord: "i", miscueLabel: "c", pbLabel: null },
-        { promptWord: "run", miscueLabel: "c", pbLabel: null },
-        { promptWord: "back", miscueLabel: "c", pbLabel: null },
-        { promptWord: "to", miscueLabel: "c", pbLabel: null },
-        { promptWord: "her", miscueLabel: "c", pbLabel: "c" },
-        { promptWord: "i", miscueLabel: "c", pbLabel: null },
-        { promptWord: "don't", miscueLabel: "c", pbLabel: null },
-        { promptWord: "feel", miscueLabel: "c", pbLabel: null },
-        { promptWord: "so", miscueLabel: "c", pbLabel: null },
-        { promptWord: "grown", miscueLabel: "c", pbLabel: null },
-        { promptWord: "up", miscueLabel: "c", pbLabel: "c" },
-        { promptWord: "everyone", miscueLabel: "c", pbLabel: null },
-        { promptWord: "is", miscueLabel: "c", pbLabel: null },
-        { promptWord: "inside", miscueLabel: "c", pbLabel: null },
-        { promptWord: "now", miscueLabel: "c", pbLabel: "c" },
-        { promptWord: "i", miscueLabel: "c", pbLabel: null },
-        { promptWord: "am", miscueLabel: "c", pbLabel: null },
-        { promptWord: "the", miscueLabel: "c", pbLabel: null },
-        { promptWord: "only", miscueLabel: "c", pbLabel: null },
-        { promptWord: "one", miscueLabel: "c", pbLabel: null },
-        { promptWord: "outside", miscueLabel: "c", pbLabel: "c" },
-        { promptWord: "i", miscueLabel: "c", pbLabel: null },
-        { promptWord: "let", miscueLabel: "c", pbLabel: null },
-        { promptWord: "go", miscueLabel: "c", pbLabel: null },
-        { promptWord: "of", miscueLabel: "c", pbLabel: null },
-        { promptWord: "her", miscueLabel: "c", pbLabel: null },
-        { promptWord: "hand", miscueLabel: "c", pbLabel: "c" },
-        { promptWord: "she", miscueLabel: "c", pbLabel: null },
-        { promptWord: "waves", miscueLabel: "c", pbLabel: null },
-        { promptWord: "to", miscueLabel: "c", pbLabel: null },
-        { promptWord: "me", miscueLabel: "c", pbLabel: "c" },
-        { promptWord: "i", miscueLabel: "c", pbLabel: null },
-        { promptWord: "run", miscueLabel: "s", pbLabel: "c" },
-        { promptWord: "run", miscueLabel: "c", pbLabel: null },
-        { promptWord: "inside", miscueLabel: "c", pbLabel: "c" },
-        { promptWord: "mummy", miscueLabel: "c", pbLabel: "i" },
-        { promptWord: "will", miscueLabel: "c", pbLabel: null },
-        { promptWord: "be", miscueLabel: "c", pbLabel: null },
-        { promptWord: "there", miscueLabel: "c", pbLabel: null },
-        { promptWord: "after", miscueLabel: "c", pbLabel: null },
-        { promptWord: "school", miscueLabel: "c", pbLabel: null },
-      ],
-    },
-  ],
-};
+// ─── CONFIG ────────────────────────────────────────────────────
+// Replace with your actual Lambda API Gateway endpoint
+const API_ENDPOINT =
+  "https://i42u5elhm7.execute-api.ap-south-1.amazonaws.com/dev/webhook";
+
+// ─── Helper: parse fileId from URL query params ─────────────────
+function getFileIdFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("fileId");
+}
+
+// ─── Helper: map raw Lambda JSON → component report shape ───────
+function mapApiResponseToReport(data) {
+  const reportCard = data?.reportCard ?? {};
+  const paraResults = reportCard?.paraResults ?? [];
+
+  return {
+    storyTitle: data?.storyTitle ?? "Reading Assessment",
+    overallScore: reportCard?.overallScore ?? 0,
+    wcpm: reportCard?.wcpm ?? 0,
+    accuracyScore: reportCard?.accuracyScore ?? 0,
+    readingAccuracy:
+      reportCard?.readingAccuracy != null
+        ? Math.round(reportCard.readingAccuracy * 100)
+        : 0,
+    paceScore: reportCard?.paceScore ?? 0,
+    pace: reportCard?.pace ?? "-",
+    speechRate: reportCard?.speechRate ?? 0,
+    phrasingScore: reportCard?.phrasingScore ?? 0,
+    improperPhraseBreaks: reportCard?.improperPhraseBreaks ?? 0,
+    missedPhraseBreaks: reportCard?.missedPhraseBreaks ?? 0,
+    prominenceScore: reportCard?.prominenceScore ?? 0,
+    paraResults: paraResults.map((para) => ({
+      paraNo: para.paraNo,
+      duration: para.duration ?? "00:00",
+      wordFeedback: (para.wordFeedback ?? []).map((w) => ({
+        promptWord: w.promptWord ?? "",
+        decodedWord: w.decodedWord ?? "",
+        miscueLabel: w.miscueLabel ?? "c",
+        pbLabel: w.pbLabel ?? null,
+      })),
+    })),
+  };
+}
 
 // ─── Score Badge ────────────────────────────────────────────────
 function ScoreBadge({ label, value, compact = false }) {
@@ -188,13 +103,7 @@ function MobileScoreGrid({ r }) {
   ];
 
   return (
-    <Box
-      sx={{
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr",
-        gap: 0.8,
-      }}
-    >
+    <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0.8 }}>
       {scores.map(({ label, value }) => (
         <ScoreBadge key={label} label={label} value={value} compact />
       ))}
@@ -350,11 +259,58 @@ function MobileLegend() {
   );
 }
 
+// ─── Loading State ───────────────────────────────────────────────
+function LoadingScreen() {
+  return (
+    <Box
+      sx={{
+        position: "fixed",
+        inset: 0,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 2,
+        backgroundColor: "#e8eaf0",
+      }}
+    >
+      <CircularProgress sx={{ color: "#0288d1" }} />
+      <Typography sx={{ color: "#555", fontSize: 15 }}>
+        Loading your report…
+      </Typography>
+    </Box>
+  );
+}
+
+// ─── Error State ─────────────────────────────────────────────────
+function ErrorScreen({ message }) {
+  return (
+    <Box
+      sx={{
+        position: "fixed",
+        inset: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        p: 3,
+        backgroundColor: "#e8eaf0",
+      }}
+    >
+      <Alert severity="error" sx={{ maxWidth: 500 }}>
+        {message}
+      </Alert>
+    </Box>
+  );
+}
+
 // ─── Main Component ──────────────────────────────────────────────
 export default function StudentReport() {
-  const r = hardcodedReport;
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
+  const [report, setReport] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const prev = {
@@ -368,6 +324,49 @@ export default function StudentReport() {
       document.documentElement.style.overflow = prev.html;
     };
   }, []);
+
+  // ── Fetch report from Lambda ──────────────────────────────────
+  useEffect(() => {
+    async function fetchReport() {
+      const fileId = getFileIdFromUrl();
+
+      if (!fileId) {
+        setError(
+          "No fileId found in URL. Please open this page via the bot link.",
+        );
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await fetch(
+          `${API_ENDPOINT}?fileId=${encodeURIComponent(fileId)}`,
+        );
+
+        if (!res.ok) {
+          throw new Error(`Failed to fetch report (status ${res.status})`);
+        }
+
+        const data = await res.json();
+        setReport(mapApiResponseToReport(data));
+      } catch (err) {
+        console.error("Report fetch error:", err);
+        setError(
+          "Could not load your report. Please try again or contact support.",
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchReport();
+  }, []);
+
+  if (loading) return <LoadingScreen />;
+  if (error) return <ErrorScreen message={error} />;
+  if (!report) return <ErrorScreen message="No report data available." />;
+
+  const r = report;
 
   return (
     <Box
@@ -402,13 +401,9 @@ export default function StudentReport() {
             px: isMobile ? 1.5 : 2.5,
             pt: isMobile ? 1 : 1.5,
             pb: isMobile ? 2 : 2.5,
-
-            // Hide scrollbar on all browsers
-            "&::-webkit-scrollbar": {
-              display: "none",
-            },
-            scrollbarWidth: "none", // Firefox
-            msOverflowStyle: "none", // IE and old Edge
+            "&::-webkit-scrollbar": { display: "none" },
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
           }}
         >
           {/* Back button */}
@@ -416,15 +411,13 @@ export default function StudentReport() {
             <ArrowBackIosNewIcon sx={{ fontSize: isMobile ? 22 : 26 }} />
           </IconButton>
 
-          {/* ══ MOBILE LAYOUT ══════════════════════════════════════ */}
+          {/* ══ MOBILE LAYOUT ════════════════════════════════════ */}
           {isMobile ? (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-              {/* Story title */}
               <Typography sx={{ fontWeight: 700, fontSize: 16 }}>
                 Story Read: {r.storyTitle}
               </Typography>
 
-              {/* Scores in a collapsible accordion */}
               <Accordion
                 disableGutters
                 elevation={0}
@@ -448,7 +441,6 @@ export default function StudentReport() {
                 </AccordionDetails>
               </Accordion>
 
-              {/* Legend accordion */}
               <Accordion
                 disableGutters
                 elevation={0}
@@ -474,7 +466,6 @@ export default function StudentReport() {
                 </AccordionDetails>
               </Accordion>
 
-              {/* Paragraph cards */}
               {r.paraResults.map((para, index) => (
                 <Paper
                   key={para.paraNo}
@@ -499,7 +490,7 @@ export default function StudentReport() {
                       Para {index + 1}
                     </Typography>
                     <AudioPlayer
-                      duration={`00:${para.duration.split(":")[1]}`}
+                      duration={`00:${(para.duration ?? "00:00").split(":")[1] ?? "00"}`}
                       isMobile
                     />
                   </Box>
@@ -512,7 +503,7 @@ export default function StudentReport() {
               ))}
             </Box>
           ) : (
-            /* ══ DESKTOP LAYOUT ════════════════════════════════════ */
+            /* ══ DESKTOP LAYOUT ══════════════════════════════════ */
             <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-start" }}>
               {/* Main column */}
               <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -611,7 +602,7 @@ export default function StudentReport() {
                         Paragraph {index + 1}
                       </Typography>
                       <AudioPlayer
-                        duration={`00:${para.duration.split(":")[1]}`}
+                        duration={`00:${(para.duration ?? "00:00").split(":")[1] ?? "00"}`}
                       />
                     </Box>
                     <Box sx={{ lineHeight: 2 }}>
