@@ -35,6 +35,7 @@ function mapApiResponseToReport(data) {
   const paraResults = reportCard?.paraResults ?? [];
 
   return {
+    audioUrl: data?.audioUrl ?? null,
     storyTitle: data?.storyTitle ?? "Reading Assessment",
     overallScore: reportCard?.overallScore ?? 0,
     wcpm: reportCard?.wcpm ?? 0,
@@ -149,8 +150,21 @@ function WordToken({ feedback, isMobile }) {
 }
 
 // ─── Audio Player ────────────────────────────────────────────────
-function AudioPlayer({ duration, isMobile }) {
+function AudioPlayer({ duration, audioUrl, isMobile }) {
   const [playing, setPlaying] = useState(false);
+  const audioRef = React.useRef(null);
+
+  const togglePlay = () => {
+    if (!audioUrl) return;
+
+    if (playing) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+
+    setPlaying(!playing);
+  };
 
   return (
     <div
@@ -163,48 +177,25 @@ function AudioPlayer({ duration, isMobile }) {
         borderRadius: "30px",
         padding: isMobile ? "4px 10px" : "4px 16px",
         boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
-        minWidth: 0,
       }}
     >
-      <IconButton
-        size="small"
-        onClick={() => setPlaying(!playing)}
-        style={{ padding: "3px", flexShrink: 0 }}
-      >
+      <audio ref={audioRef} src={audioUrl} />
+
+      <IconButton size="small" onClick={togglePlay} disabled={!audioUrl}>
         {playing ? (
-          <PauseIcon style={{ fontSize: isMobile ? 18 : 20, color: "#333" }} />
+          <PauseIcon style={{ fontSize: isMobile ? 18 : 20 }} />
         ) : (
-          <PlayArrowIcon
-            style={{ fontSize: isMobile ? 18 : 20, color: "#333" }}
-          />
+          <PlayArrowIcon style={{ fontSize: isMobile ? 18 : 20 }} />
         )}
       </IconButton>
-      <Typography
-        variant="caption"
-        style={{
-          color: "#555",
-          whiteSpace: "nowrap",
-          fontSize: isMobile ? "11px" : "12px",
-        }}
-      >
-        00:00/{duration}
-      </Typography>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        {/* LinearProgress uses sx here because it needs MUI's internal bar selector */}
-        <LinearProgress
-          variant="determinate"
-          value={0}
-          sx={{
-            height: 5,
-            borderRadius: 4,
-            backgroundColor: "#ddd",
-            "& .MuiLinearProgress-bar": { backgroundColor: "#bbb" },
-          }}
-        />
+
+      <Typography variant="caption">00:00/{duration}</Typography>
+
+      <div style={{ flex: 1 }}>
+        <LinearProgress variant="determinate" value={0} />
       </div>
-      <FiberManualRecordIcon
-        style={{ fontSize: 10, color: "#4caf50", flexShrink: 0 }}
-      />
+
+      <FiberManualRecordIcon style={{ fontSize: 10, color: "#4caf50" }} />
     </div>
   );
 }
@@ -520,6 +511,7 @@ export default function StudentReport() {
                     </Typography>
                     <AudioPlayer
                       duration={`00:${(para.duration ?? "00:00").split(":")[1] ?? "00"}`}
+                      audioUrl={r.audioUrl}
                       isMobile
                     />
                   </div>
@@ -663,6 +655,7 @@ export default function StudentReport() {
                       </Typography>
                       <AudioPlayer
                         duration={`00:${(para.duration ?? "00:00").split(":")[1] ?? "00"}`}
+                        audioUrl={r.audioUrl}
                       />
                     </div>
                     <div style={{ lineHeight: 2 }}>
