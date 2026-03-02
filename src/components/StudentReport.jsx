@@ -18,6 +18,7 @@ import PauseIcon from "@mui/icons-material/Pause";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import { Slider } from "@mui/material";
 
 // ─── CONFIG ────────────────────────────────────────────────────
 const API_ENDPOINT =
@@ -229,7 +230,28 @@ function AudioPlayer({ duration, audioUrl, isMobile }) {
       </Typography>
 
       <div style={{ flex: 1 }}>
-        <LinearProgress variant="determinate" value={progress} />
+        <Slider
+          value={progress}
+          onChange={(e, newValue) => {
+            const audio = audioRef.current;
+            if (!audio) return;
+
+            const newTime = (newValue / 100) * audio.duration;
+            audio.currentTime = newTime;
+            setProgress(newValue);
+          }}
+          sx={{
+            height: 4,
+            padding: 0,
+            "& .MuiSlider-thumb": {
+              width: 12,
+              height: 12,
+            },
+            "& .MuiSlider-track": {
+              border: "none",
+            },
+          }}
+        />
       </div>
 
       <FiberManualRecordIcon style={{ fontSize: 10, color: "#4caf50" }} />
@@ -389,7 +411,7 @@ export default function StudentReport() {
         }
 
         const data = await res.json();
-        console.log("Lambda response:", data); 
+        console.log("Lambda response:", data);
         setReport(mapApiResponseToReport(data));
       } catch (err) {
         console.error("Report fetch error:", err);
