@@ -152,7 +152,34 @@ function WordToken({ feedback, isMobile }) {
 // ─── Audio Player ────────────────────────────────────────────────
 function AudioPlayer({ duration, audioUrl, isMobile }) {
   const [playing, setPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
   const audioRef = useRef(null);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const updateProgress = () => {
+      const percent = (audio.currentTime / audio.duration) * 100;
+      setProgress(percent || 0);
+      setCurrentTime(audio.currentTime);
+    };
+
+    const handleEnded = () => {
+      setPlaying(false);
+      setProgress(0);
+      setCurrentTime(0);
+    };
+
+    audio.addEventListener("timeupdate", updateProgress);
+    audio.addEventListener("ended", handleEnded);
+
+    return () => {
+      audio.removeEventListener("timeupdate", updateProgress);
+      audio.removeEventListener("ended", handleEnded);
+    };
+  }, []);
 
   const togglePlay = () => {
     if (!audioUrl) return;
@@ -164,6 +191,14 @@ function AudioPlayer({ duration, audioUrl, isMobile }) {
     }
 
     setPlaying(!playing);
+  };
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, "0")}:${secs
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   return (
@@ -189,10 +224,12 @@ function AudioPlayer({ duration, audioUrl, isMobile }) {
         )}
       </IconButton>
 
-      <Typography variant="caption">00:00/{duration}</Typography>
+      <Typography variant="caption">
+        {formatTime(currentTime)} / {duration}
+      </Typography>
 
       <div style={{ flex: 1 }}>
-        <LinearProgress variant="determinate" value={0} />
+        <LinearProgress variant="determinate" value={progress} />
       </div>
 
       <FiberManualRecordIcon style={{ fontSize: 10, color: "#4caf50" }} />
