@@ -22,10 +22,10 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import CloseIcon from "@mui/icons-material/Close";
 
 const STORY_DATA = {
-  id: "EN-OL-RC-247-1",
-  title: "The Dam and the River",
+  id: "EN-OL-RC-250-1",
+  title: "Gold",
   lang: "EN",
-  text: `A dam is a wall built across a river. When it rains, a lot of water goes down the river and into the sea. The dam stops the water. The water then becomes a big lake behind the dam. Later this water is let out into the fields. There it helps crops like rice to grow.`,
+  text: `Gold is bright yellow. It is the colour of the sun. We find gold deep inside the earth. It lies far away from the sun's light. We have to dig into the earth to take the gold out. Sometimes, we have to cut a mile deep. These 'cuts' are called mines. People fight for these mines. This is because gold is considered to be precious.`,
 };
 
 // Default audio recording configuration
