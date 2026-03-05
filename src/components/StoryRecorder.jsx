@@ -16,6 +16,7 @@ import {
   InputAdornment,
 } from "@mui/material";
 import { uploadAudioToBackend } from "../services/api";
+import { getSenderFromBot, closeWebView } from "../services/botExtension";
 
 import MicIcon from "@mui/icons-material/Mic";
 import SettingsIcon from "@mui/icons-material/Settings";
@@ -528,78 +529,33 @@ const StoryRecorder = ({ details = {} }) => {
     }
   }, [audioBlob]);
 
-  const closeWebView = () => {
-    if (window.BotExtension?.close) {
-      window.BotExtension.close();
-    } else {
-      window.history.back(); // fallback
-    }
-  };
-
-  const waitForBotExtension = () => {
-    return new Promise((resolve, reject) => {
-      let attempts = 0;
-
-      const interval = setInterval(() => {
-        if (window.BotExtension && window.BotExtension.getPayload) {
-          clearInterval(interval);
-          resolve(window.BotExtension);
-        }
-
-        attempts++;
-
-        // wait up to 5 seconds
-        if (attempts > 50) {
-          clearInterval(interval);
-          reject("BotExtension SDK not loaded");
-        }
-      }, 100);
-    });
-  };
-
-  useEffect(() => {
-    console.log("BotExtension:", window.BotExtension);
-  }, []);
-
   const handleFinalSubmit = async () => {
     if (!audioBlob) {
       alert("No audio recorded");
       return;
     }
 
+    // show confirmation UI
     setSending(true);
 
     try {
-      // Wait for SDK properly
-      const sdk = await waitForBotExtension();
+      const payload = await getSenderFromBot();
+      const sender = payload?.value;
 
-      sdk.getPayload(async (payload) => {
-        console.log("Payload received:", payload);
-
-        if (!payload || !payload.value) {
-          alert("Sender not found in payload");
-          setSending(false);
-          return;
-        }
-
-        try {
-          await uploadAudioToBackend(audioBlob, payload.value);
-
-          // Close WebView
-          sdk.close();
-        } catch (err) {
-          console.error("Upload failed:", err);
-          alert("Upload failed");
-          sdk.close();
-        }
-
-        setSending(false);
-      });
+      if (sender) {
+        // Upload in background
+        uploadAudioToBackend(audioBlob, sender);
+      } else {
+        console.warn("Sender not found in payload");
+      }
     } catch (err) {
-      console.error("SDK error:", err);
-      alert("SDK not ready. Please try again.");
-      setSending(false);
+      console.error("Upload error:", err);
     }
+
+    // Close WebView after 3 seconds
+    setTimeout(() => {
+      closeWebView();
+    }, 3000);
   };
 
   return (
