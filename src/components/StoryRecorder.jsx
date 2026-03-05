@@ -1053,22 +1053,46 @@ const StoryRecorder = ({ details = {} }) => {
 
                 <p style={{ marginTop: 20 }}>What would you like to do next?</p>
 
-                <Button
-                  variant="contained"
-                  sx={{
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    gap: "16px",
                     marginTop: "20px",
-                    borderRadius: "30px",
-                    textTransform: "none",
-                  }}
-                  onClick={() => {
-                    setAudioBlob(null);
-                    setAudioURL(null);
-                    setSubmitted(false);
-                    setSending(false);
+                    flexWrap: "wrap",
                   }}
                 >
-                  Record Again
-                </Button>
+                  <Button
+                    variant="contained"
+                    sx={{
+                      backgroundColor: "#4caf50",
+                      borderRadius: "30px",
+                      textTransform: "none",
+                    }}
+                    onClick={() => {
+                      setAudioBlob(null);
+                      setAudioURL(null);
+                      setSubmitted(false);
+                      setSending(false);
+                    }}
+                  >
+                    Record Again
+                  </Button>
+
+                  <Button
+                    variant="contained"
+                    sx={{
+                      backgroundColor: "#1976d2",
+                      borderRadius: "30px",
+                      textTransform: "none",
+                    }}
+                    onClick={() => {
+                      closeWebView();
+                    }}
+                  >
+                    Back to Chat
+                  </Button>
+                </div>
               </div>
             )}
           </div>
