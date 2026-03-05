@@ -1044,12 +1044,14 @@ const StoryRecorder = ({ details = {} }) => {
             ) : (
               <div style={{ textAlign: "center" }}>
                 <Alert severity="success" sx={{ mb: 3 }}>
-                  Recording uploaded successfully!
+                  🎉 Recording uploaded successfully!
                 </Alert>
 
                 <h3>{details.fullName}</h3>
-                <p>has completed</p>
+                <p>You have completed</p>
                 <strong>{story.title}</strong>
+
+                <p style={{ marginTop: 20 }}>What would you like to do next?</p>
 
                 <Button
                   variant="contained"
@@ -1062,6 +1064,7 @@ const StoryRecorder = ({ details = {} }) => {
                     setAudioBlob(null);
                     setAudioURL(null);
                     setSubmitted(false);
+                    setSending(false);
                   }}
                 >
                   Record Again
