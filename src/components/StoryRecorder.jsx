@@ -1043,8 +1043,17 @@ const StoryRecorder = ({ details = {} }) => {
               </>
             ) : (
               <div style={{ textAlign: "center" }}>
-                <Alert severity="success" sx={{ mb: 3 }}>
-                  Recording uploaded successfully! 🎉
+                <Alert
+                  severity="success"
+                  sx={{
+                    mb: 3,
+                    textAlign: "center",
+                    justifyContent: "center",
+                    maxWidth: "300px",
+                    margin: "0 auto",
+                  }}
+                >
+                  Recording uploaded successfully!
                 </Alert>
 
                 <h3>{details.fullName}</h3>
