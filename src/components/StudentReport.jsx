@@ -484,17 +484,6 @@ export default function StudentReport() {
             msOverflowStyle: "none",
           }}
         >
-          {/* Back button */}
-          <IconButton
-            style={{
-              padding: 0,
-              color: "#0288d1",
-              marginBottom: isMobile ? "8px" : "16px",
-            }}
-          >
-            <ArrowBackIosNewIcon style={{ fontSize: isMobile ? 22 : 26 }} />
-          </IconButton>
-
           {/* ══ MOBILE LAYOUT ════════════════════════════════════ */}
           {isMobile ? (
             <div
