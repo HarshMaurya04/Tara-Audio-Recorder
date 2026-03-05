@@ -3,7 +3,6 @@ import {
   Typography,
   IconButton,
   Paper,
-  LinearProgress,
   Accordion,
   AccordionSummary,
   AccordionDetails,
@@ -19,16 +18,11 @@ import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { Slider } from "@mui/material";
+import { getReportPayload, closeWebView } from "../services/botExtension";
 
 // ─── CONFIG ────────────────────────────────────────────────────
 const API_ENDPOINT =
   "https://i42u5elhm7.execute-api.ap-south-1.amazonaws.com/dev/webhook";
-
-// ─── Helper: parse fileId from URL query params ─────────────────
-function getFileIdFromUrl() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get("fileId");
-}
 
 // ─── Helper: map raw Lambda JSON → component report shape ───────
 function mapApiResponseToReport(data) {
@@ -408,17 +402,15 @@ export default function StudentReport() {
   // ── Fetch report from Lambda ──────────────────────────────────
   useEffect(() => {
     async function fetchReport() {
-      const fileId = getFileIdFromUrl();
-
-      if (!fileId) {
-        setError(
-          "No fileId found in URL. Please open this page via the bot link.",
-        );
-        setLoading(false);
-        return;
-      }
-
       try {
+        const payload = await getReportPayload();
+
+        if (!payload || !payload.fileId) {
+          throw new Error("Missing payload from SwiftChat");
+        }
+
+        const { fileId, storyTitle } = payload;
+
         const res = await fetch(
           `${API_ENDPOINT}?fileId=${encodeURIComponent(fileId)}`,
         );
@@ -428,8 +420,11 @@ export default function StudentReport() {
         }
 
         const data = await res.json();
-        console.log("Lambda response:", data);
-        setReport(mapApiResponseToReport(data));
+
+        const mapped = mapApiResponseToReport(data);
+        mapped.storyTitle = storyTitle;
+
+        setReport(mapped);
       } catch (err) {
         console.error("Report fetch error:", err);
         setError(
@@ -484,6 +479,18 @@ export default function StudentReport() {
             msOverflowStyle: "none",
           }}
         >
+          {/* Back button */}
+          <IconButton
+            style={{
+              padding: 0,
+              color: "#0288d1",
+              marginBottom: isMobile ? "8px" : "16px",
+            }}
+            onClick={closeWebView}
+          >
+            <ArrowBackIosNewIcon style={{ fontSize: isMobile ? 22 : 26 }} />
+          </IconButton>
+
           {/* ══ MOBILE LAYOUT ════════════════════════════════════ */}
           {isMobile ? (
             <div
