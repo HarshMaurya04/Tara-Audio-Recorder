@@ -557,6 +557,10 @@ const StoryRecorder = ({ details = {} }) => {
     });
   };
 
+  useEffect(() => {
+    console.log("BotExtension:", window.BotExtension);
+  }, []);
+
   const handleFinalSubmit = async () => {
     if (!audioBlob) {
       alert("No audio recorded");
