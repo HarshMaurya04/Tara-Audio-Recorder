@@ -552,10 +552,10 @@ const StoryRecorder = ({ details = {} }) => {
       console.error("Upload error:", err);
     }
 
-    // Close WebView after 3 seconds
-    setTimeout(() => {
-      closeWebView();
-    }, 3000);
+    // // Close WebView after 3 seconds
+    // setTimeout(() => {
+    //   closeWebView();
+    // }, 3000);
   };
 
   return (
