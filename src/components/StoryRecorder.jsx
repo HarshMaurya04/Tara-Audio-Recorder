@@ -104,19 +104,18 @@ const StoryRecorder = ({ details = {} }) => {
       try {
         const payload = await getSenderFromBot();
 
-        if (payload?.value) {
-          const parsed = JSON.parse(payload.value);
+        if (!payload || !payload.story) return;
 
-          setSender(parsed.user);
-          setStory({
-            title: parsed.story.story_name,
-            grade: parsed.story.grade,
-            lang: parsed.story.language,
-            text: parsed.story.text,
-            reference_text_id: parsed.story.reference_text_id,
-            para_no: parsed.story.para_no,
-          });
-        }
+        setSender(payload.user);
+
+        setStory({
+          title: payload.story.story_name,
+          grade: payload.story.grade,
+          lang: payload.story.language,
+          text: payload.story.text,
+          reference_text_id: payload.story.reference_text_id,
+          para_no: payload.story.para_no,
+        });
       } catch (err) {
         console.error("Failed to load story payload", err);
       }
@@ -171,7 +170,7 @@ const StoryRecorder = ({ details = {} }) => {
     }
 
     setDynamicFontSize(best);
-  }, [story.text]);
+  }, [story]);
 
   useEffect(() => {
     requestAnimationFrame(() => {

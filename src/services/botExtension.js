@@ -1,12 +1,19 @@
 export const getSenderFromBot = () => {
   return new Promise((resolve) => {
-    if (window.BotExtension) {
-      window.BotExtension.getPayload((data) => {
-        resolve(data);
-      });
-    } else {
+    if (!window.BotExtension) {
       resolve(null);
+      return;
     }
+
+    window.BotExtension.getPayload((data) => {
+      try {
+        const parsed = JSON.parse(data?.value || "{}");
+        resolve(parsed);
+      } catch (err) {
+        console.error("Payload parse error:", err);
+        resolve(null);
+      }
+    });
   });
 };
 
