@@ -1,4 +1,4 @@
-export const uploadAudioToBackend = async (audioBlob, sender) => {
+export const uploadAudioToBackend = async (audioBlob, sender, story) => {
   const base64 = await blobToBase64(audioBlob);
 
   const response = await fetch(
@@ -12,6 +12,8 @@ export const uploadAudioToBackend = async (audioBlob, sender) => {
         source: "webview",
         sender: sender,
         audio: base64,
+        reference_text_id: story.reference_text_id,
+        para_no: story.para_no,
         fileType: "webm",
       }),
     },

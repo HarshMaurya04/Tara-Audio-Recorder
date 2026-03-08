@@ -17,17 +17,9 @@ import {
 } from "@mui/material";
 import { uploadAudioToBackend } from "../services/api";
 import { getSenderFromBot, closeWebView } from "../services/botExtension";
-
 import MicIcon from "@mui/icons-material/Mic";
 import SettingsIcon from "@mui/icons-material/Settings";
 import CloseIcon from "@mui/icons-material/Close";
-
-const STORY_DATA = {
-  id: "EN-OL-RC-250-1",
-  title: "Gold",
-  lang: "EN",
-  text: `Gold is bright yellow. It is the colour of the sun. We find gold deep inside the earth. It lies far away from the sun's light. We have to dig into the earth to take the gold out. Sometimes, we have to cut a mile deep. These 'cuts' are called mines. People fight for these mines. This is because gold is considered to be precious.`,
-};
 
 // Default audio recording configuration
 const defaultMimeType = "audio/webm"; // Recording format
@@ -62,14 +54,15 @@ const isFullscreen = () => {
 };
 
 const StoryRecorder = ({ details = {} }) => {
-  const story = STORY_DATA;
-
   // Converts seconds into MM:SS format
   const formatTime = useCallback(
     (s) =>
       `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`,
     [],
   );
+
+  const [story, setStory] = useState(null);
+  const [sender, setSender] = useState(null);
 
   const [isRecording, setIsRecording] = useState(false); // Is recording active?
   const [timer, setTimer] = useState(0); // Recording timer
@@ -106,9 +99,35 @@ const StoryRecorder = ({ details = {} }) => {
   const audioContextRef = useRef(null);
   const dataArrayRef = useRef(null);
 
+  useEffect(() => {
+    const loadPayload = async () => {
+      try {
+        const payload = await getSenderFromBot();
+
+        if (payload?.value) {
+          const parsed = JSON.parse(payload.value);
+
+          setSender(parsed.user);
+          setStory({
+            title: parsed.story.story_name,
+            grade: parsed.story.grade,
+            lang: parsed.story.language,
+            text: parsed.story.text,
+            reference_text_id: parsed.story.reference_text_id,
+            para_no: parsed.story.para_no,
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load story payload", err);
+      }
+    };
+
+    loadPayload();
+  }, []);
+
   // Automatically adjusts font size so text fits inside story box
   const fitTextToContainer = useCallback(() => {
-    if (!storyContainerRef.current || !measureRef.current || !story.text)
+    if (!storyContainerRef.current || !measureRef.current || !story?.text)
       return;
 
     const container = storyContainerRef.current;
@@ -539,12 +558,9 @@ const StoryRecorder = ({ details = {} }) => {
     setSending(true);
 
     try {
-      const payload = await getSenderFromBot();
-      const sender = payload?.value;
-
       if (sender) {
         // Upload in background
-        uploadAudioToBackend(audioBlob, sender);
+        uploadAudioToBackend(audioBlob, sender, story);
       } else {
         console.warn("Sender not found in payload");
       }
@@ -557,6 +573,15 @@ const StoryRecorder = ({ details = {} }) => {
     //   closeWebView();
     // }, 3000);
   };
+
+  if (!story) {
+    return (
+      <div style={{ textAlign: "center", marginTop: 100 }}>
+        <CircularProgress />
+        <p>Loading story...</p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -729,17 +754,17 @@ const StoryRecorder = ({ details = {} }) => {
                     alignItems: "center",
                     flex: 1,
                     justifyContent: "flex-start",
-                    gap: "1rem",
                   }}
                 >
-                  <p style={{ color: "#7ed46a" }}>{details.fullName}</p>
                   <p>
-                    Class: {details.std} | Section: {details.divn} | Roll No:{" "}
-                    {details.rollNo}
+                    Class: {story.grade} | Language:{" "}
+                    {story.lang === "EN" ? "English" : "Hindi"}
                   </p>
                 </div>
 
-                {story.title ? story.title : "Untitled Story"}
+                <span style={{ fontWeight: "600", fontSize: 18 }}>
+                  {story.title || "Untitled Story"}
+                </span>
 
                 {/* Mic info */}
                 <div
@@ -1056,7 +1081,6 @@ const StoryRecorder = ({ details = {} }) => {
                   Recording uploaded successfully!
                 </Alert>
 
-                <h3>{details.fullName}</h3>
                 <p>You have completed</p>
                 <strong>{story.title}</strong>
 
