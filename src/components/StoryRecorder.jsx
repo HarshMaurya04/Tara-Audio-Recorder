@@ -594,7 +594,6 @@ const StoryRecorder = ({ details = {} }) => {
             background: "#f4f6f9",
             padding: "20px",
             boxSizing: "border-box",
-            overflow: "hidden",
           }}
         >
           <div
