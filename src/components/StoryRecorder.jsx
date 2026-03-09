@@ -139,6 +139,20 @@ const StoryRecorder = ({ details = {} }) => {
     return () => window.removeEventListener("resize", checkOrientation);
   }, []);
 
+  useEffect(() => {
+    const lockLandscape = async () => {
+      try {
+        if (screen.orientation && screen.orientation.lock) {
+          await screen.orientation.lock("landscape");
+        }
+      } catch (err) {
+        console.log("Orientation lock not supported:", err);
+      }
+    };
+
+    lockLandscape();
+  }, []);
+
   // Automatically adjusts font size so text fits inside story box
   const fitTextToContainer = useCallback(() => {
     if (!storyContainerRef.current || !measureRef.current || !story?.text)
@@ -603,32 +617,54 @@ const StoryRecorder = ({ details = {} }) => {
     );
   }
 
+  if (window.innerWidth <= 768 && window.innerHeight > window.innerWidth) {
+    return (
+      <div
+        style={{
+          height: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          textAlign: "center",
+          background: "#f4f6f9",
+          padding: "20px",
+        }}
+      >
+        <div>
+          <h2>Please rotate your device</h2>
+          <p>This activity works best in landscape mode.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       {!submitted ? (
         <div
           style={{
-            minHeight: "100vh",
+            height: "100vh",
+            width: "100vw",
+            overflow: "hidden",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
             background: "#f4f6f9",
-            padding: "20px",
-            boxSizing: "border-box",
           }}
         >
           <div
             style={{
               width: "100%",
               maxWidth: isMobileLandscape ? "100%" : "850px",
+              height: isMobileLandscape ? "100%" : "auto",
               background: "#ffffff",
               borderRadius: "24px",
-              padding: isMobileLandscape ? "16px 20px" : "40px 80px",
+              padding: isMobileLandscape ? "12px 16px" : "40px 80px",
               boxShadow: "0 15px 40px rgba(0,0,0,0.08)",
               display: "flex",
               flexDirection: "column",
               alignItems: "stretch",
-              gap: isMobileLandscape ? "15px" : "30px",
+              gap: isMobileLandscape ? "12px" : "30px",
             }}
           >
             {/* Mic Modal */}
@@ -820,7 +856,8 @@ const StoryRecorder = ({ details = {} }) => {
               className={story.lang !== "EN" ? "font-devanagari" : undefined}
               style={{
                 backgroundColor: "#ffffff",
-                height: isMobileLandscape ? "45vh" : "300px",
+                flex: isMobileLandscape ? 1 : "none",
+                height: isMobileLandscape ? "auto" : "300px",
                 borderRadius: "20px",
                 border: "3px solid #2f80ed",
                 boxShadow:
