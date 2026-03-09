@@ -594,6 +594,7 @@ const StoryRecorder = ({ details = {} }) => {
             background: "#f4f6f9",
             padding: "20px",
             boxSizing: "border-box",
+            scrollbar: "hidden",
           }}
         >
           <div
@@ -801,7 +802,7 @@ const StoryRecorder = ({ details = {} }) => {
                 border: "3px solid #2f80ed",
                 boxShadow:
                   "0 4px 8px rgba(0,0,0,0.05), 0 15px 35px rgba(0,0,0,0.08)",
-                padding: "45px 40px",
+                padding: "50px 40px",
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
