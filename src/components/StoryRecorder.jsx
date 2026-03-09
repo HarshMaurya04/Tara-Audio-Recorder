@@ -592,7 +592,7 @@ const StoryRecorder = ({ details = {} }) => {
             justifyContent: "center",
             alignItems: "center",
             background: "#f4f6f9",
-            padding: "20px",
+            padding: "30px",
             boxSizing: "border-box",
           }}
         >
