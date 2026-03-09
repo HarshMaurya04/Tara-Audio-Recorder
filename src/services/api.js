@@ -14,6 +14,7 @@ export const uploadAudioToBackend = async (audioBlob, sender, story) => {
         audio: base64,
         reference_text_id: story.reference_text_id,
         para_no: story.para_no,
+        language: story.lang,
       }),
     },
   );
