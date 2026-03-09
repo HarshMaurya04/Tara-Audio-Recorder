@@ -77,7 +77,6 @@ const StoryRecorder = ({ details = {} }) => {
   const [inputDevices, setInputDevices] = useState([]);
   const [inputDevicesLoading, setInputDevicesLoading] = useState(false);
   const [selectedDeviceId, setSelectedDeviceId] = useState(null);
-  const [isMobileLandscape, setIsMobileLandscape] = useState(false);
 
   const [audioBlob, setAudioBlob] = useState(null); // Final recorded blob
   const [audioURL, setAudioURL] = useState(null); // For playback
@@ -123,34 +122,6 @@ const StoryRecorder = ({ details = {} }) => {
     };
 
     loadPayload();
-  }, []);
-
-  useEffect(() => {
-    const checkOrientation = () => {
-      const isMobile = window.innerWidth <= 768;
-      const isLandscape = window.innerWidth > window.innerHeight;
-
-      setIsMobileLandscape(isMobile && isLandscape);
-    };
-
-    checkOrientation();
-    window.addEventListener("resize", checkOrientation);
-
-    return () => window.removeEventListener("resize", checkOrientation);
-  }, []);
-
-  useEffect(() => {
-    const lockLandscape = async () => {
-      try {
-        if (screen.orientation && screen.orientation.lock) {
-          await screen.orientation.lock("landscape");
-        }
-      } catch (err) {
-        console.log("Orientation lock not supported:", err);
-      }
-    };
-
-    lockLandscape();
   }, []);
 
   // Automatically adjusts font size so text fits inside story box
@@ -422,12 +393,6 @@ const StoryRecorder = ({ details = {} }) => {
       setMicModalOpen(true);
       return;
     }
-
-    // Enter fullscreen when recording starts
-    if (!isFullscreen()) {
-      document.documentElement.requestFullscreen?.();
-    }
-
     // Prevent duplicate starts
     if (isRecording || initializing) return;
 
@@ -617,54 +582,31 @@ const StoryRecorder = ({ details = {} }) => {
     );
   }
 
-  if (window.innerWidth <= 768 && window.innerHeight > window.innerWidth) {
-    return (
-      <div
-        style={{
-          height: "100vh",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          textAlign: "center",
-          background: "#f4f6f9",
-          padding: "20px",
-        }}
-      >
-        <div>
-          <h2>Please rotate your device</h2>
-          <p>This activity works best in landscape mode.</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <>
       {!submitted ? (
         <div
           style={{
-            height: "100vh",
-            width: "100vw",
-            overflow: "hidden",
+            minHeight: "100vh",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
             background: "#f4f6f9",
+            padding: "20px",
+            boxSizing: "border-box",
           }}
         >
           <div
             style={{
               width: "100%",
-              maxWidth: isMobileLandscape ? "100%" : "850px",
-              height: isMobileLandscape ? "100%" : "auto",
+              maxWidth: "850px",
               background: "#ffffff",
               borderRadius: "24px",
-              padding: isMobileLandscape ? "12px 16px" : "40px 80px",
+              padding: "40px 80px",
               boxShadow: "0 15px 40px rgba(0,0,0,0.08)",
               display: "flex",
               flexDirection: "column",
-              alignItems: "stretch",
-              gap: isMobileLandscape ? "12px" : "30px",
+              gap: "30px",
             }}
           >
             {/* Mic Modal */}
@@ -786,8 +728,8 @@ const StoryRecorder = ({ details = {} }) => {
                 padding: "10px 0",
                 borderBottom: "1px solid #eee",
                 marginBottom: 12,
-                flexWrap: isMobileLandscape ? "nowrap" : "wrap",
-                gap: isMobileLandscape ? 6 : 12,
+                flexWrap: "wrap",
+                gap: 12,
               }}
             >
               {/* Story title */}
@@ -809,8 +751,7 @@ const StoryRecorder = ({ details = {} }) => {
                     color: "#666",
                     display: "flex",
                     alignItems: "center",
-                    flex: "1 1 0",
-                    minWidth: 0,
+                    flex: 1,
                     justifyContent: "flex-start",
                   }}
                 >
@@ -830,8 +771,7 @@ const StoryRecorder = ({ details = {} }) => {
                     display: "flex",
                     alignItems: "center",
                     gap: 6,
-                    flex: "1 1 0",
-                    minWidth: 0,
+                    flex: 1,
                     justifyContent: "flex-end",
                     flexWrap: "wrap",
                   }}
@@ -856,13 +796,12 @@ const StoryRecorder = ({ details = {} }) => {
               className={story.lang !== "EN" ? "font-devanagari" : undefined}
               style={{
                 backgroundColor: "#ffffff",
-                flex: isMobileLandscape ? 1 : "none",
-                height: isMobileLandscape ? "auto" : "300px",
+                height: "300px",
                 borderRadius: "20px",
                 border: "3px solid #2f80ed",
                 boxShadow:
                   "0 4px 8px rgba(0,0,0,0.05), 0 15px 35px rgba(0,0,0,0.08)",
-                padding: isMobileLandscape ? "20px" : "50px 60px",
+                padding: "50px 60px",
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
@@ -872,9 +811,7 @@ const StoryRecorder = ({ details = {} }) => {
               {showText && (
                 <p
                   style={{
-                    fontSize: isMobileLandscape
-                      ? Math.min(dynamicFontSize, 24)
-                      : dynamicFontSize,
+                    fontSize: dynamicFontSize,
                     margin: 0,
                     color: "#7a7a7a",
                     fontWeight: 500,
@@ -888,17 +825,12 @@ const StoryRecorder = ({ details = {} }) => {
 
             {/* Control Row */}
             <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                marginTop: 20,
-                flexWrap: isMobileLandscape ? "nowrap" : "wrap",
-              }}
+              style={{ display: "flex", alignItems: "center", marginTop: 20 }}
             >
               {/* Left: Timer and waveform */}
               <div
                 style={{
-                  flex: "0 0 auto",
+                  flex: 1,
                   display: "flex",
                   alignItems: "center",
                   gap: "1rem",
@@ -913,7 +845,7 @@ const StoryRecorder = ({ details = {} }) => {
                 </span>
                 <canvas
                   ref={canvasRef}
-                  width={isMobileLandscape ? 300 : 200}
+                  width={200}
                   height={40}
                   style={{
                     background: "linear-gradient(to bottom, #fff, #f1f1f1)",
@@ -939,7 +871,6 @@ const StoryRecorder = ({ details = {} }) => {
                       textTransform: "none",
                       fontWeight: "600",
                       color: "#fff",
-                      padding: isMobileLandscape ? "8px 28px" : "6px 22px",
                       boxShadow: "0 4px 10px rgba(0, 119, 255, 0.3)",
                       transition: "all 0.2s ease-in-out",
                       "&:hover": {
