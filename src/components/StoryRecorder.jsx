@@ -602,11 +602,11 @@ const StoryRecorder = ({ details = {} }) => {
               maxWidth: "850px",
               background: "#ffffff",
               borderRadius: "24px",
-              padding: "40px 80px",
+              padding: "30px 60px",
               boxShadow: "0 15px 40px rgba(0,0,0,0.08)",
               display: "flex",
               flexDirection: "column",
-              gap: "30px",
+              gap: "20px",
             }}
           >
             {/* Mic Modal */}
