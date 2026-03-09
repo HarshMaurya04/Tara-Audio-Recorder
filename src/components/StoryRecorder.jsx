@@ -599,10 +599,10 @@ const StoryRecorder = ({ details = {} }) => {
           <div
             style={{
               width: "100%",
-              maxWidth: "800px",
+              maxWidth: "850px",
               background: "#ffffff",
               borderRadius: "24px",
-              padding: "30px 60px",
+              padding: "20px 80px",
               boxShadow: "0 15px 40px rgba(0,0,0,0.08)",
               display: "flex",
               flexDirection: "column",
