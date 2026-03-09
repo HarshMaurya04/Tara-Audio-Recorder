@@ -592,7 +592,7 @@ const StoryRecorder = ({ details = {} }) => {
             justifyContent: "center",
             alignItems: "center",
             background: "#f4f6f9",
-            padding: "30px",
+            padding: "20px",
             boxSizing: "border-box",
           }}
         >
@@ -602,7 +602,7 @@ const StoryRecorder = ({ details = {} }) => {
               maxWidth: "850px",
               background: "#ffffff",
               borderRadius: "24px",
-              padding: "40px 80px",
+              padding: "20px 40px",
               boxShadow: "0 15px 40px rgba(0,0,0,0.08)",
               display: "flex",
               flexDirection: "column",
