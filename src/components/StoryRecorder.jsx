@@ -15,6 +15,7 @@ import {
   OutlinedInput,
   InputAdornment,
 } from "@mui/material";
+import { createPortal } from "react-dom";
 import { uploadAudioToBackend } from "../services/api";
 import { getSenderFromBot, closeWebView } from "../services/botExtension";
 import MicIcon from "@mui/icons-material/Mic";
@@ -56,6 +57,26 @@ const useIsMobile = () => {
     return () => mq.removeEventListener("change", handler);
   }, []);
   return isMobile;
+};
+
+// ─── Mobile mic dialog rendered via portal so it rotates with the layout ────
+const MobileMicDialog = ({ open, onClose, children }) => {
+  if (!open) return null;
+  return createPortal(
+    <>
+      {/* Backdrop */}
+      <div className="sr-mobile-dialog-backdrop" onClick={onClose} />
+      {/* Rotated portal wrapper */}
+      <div className="sr-mobile-dialog-portal">
+        <div className="sr-mobile-dialog-inner">
+          <div className="sr-mobile-dialog-box">
+            {children}
+          </div>
+        </div>
+      </div>
+    </>,
+    document.body
+  );
 };
 
 const StoryRecorder = ({ details = {} }) => {
@@ -243,9 +264,7 @@ const StoryRecorder = ({ details = {} }) => {
       );
     } else if (savedDeviceId && !foundDevice) {
       localStorage.removeItem("selectedMicDeviceId");
-      alert(
-        "Previously selected microphone is no longer available. Switching to the default microphone.",
-      );
+      alert("Previously selected microphone is no longer available. Switching to the default microphone.");
       const fallbackId = uniqueDevices[0]?.deviceId;
       if (fallbackId) setSelectedDeviceId(fallbackId);
     } else if (!savedDeviceId && uniqueDevices.length > 0) {
@@ -253,9 +272,7 @@ const StoryRecorder = ({ details = {} }) => {
         const stillValid = uniqueDevices.some((d) => d.deviceId === prev);
         if (!stillValid) {
           if (prev !== null)
-            alert(
-              "Selected microphone is no longer available. Switching to a default microphone.",
-            );
+            alert("Selected microphone is no longer available. Switching to a default microphone.");
           return uniqueDevices[0]?.deviceId || null;
         }
         return prev;
@@ -300,9 +317,7 @@ const StoryRecorder = ({ details = {} }) => {
         console.log("mic permission error: ", e);
         setPermissionGranted(false);
         if (e.name === "NotAllowedError" || e.name === "SecurityError") {
-          alert(
-            "Microphone access was denied. Please allow microphone permission in your browser settings.",
-          );
+          alert("Microphone access was denied. Please allow microphone permission in your browser settings.");
         } else {
           alert("An error occurred while requesting microphone access.");
         }
@@ -318,8 +333,7 @@ const StoryRecorder = ({ details = {} }) => {
 
     const bufferLength = analyser.fftSize;
     const draw = () => {
-      if (!analyserRef.current || !dataArrayRef.current || !canvasRef.current)
-        return;
+      if (!analyserRef.current || !dataArrayRef.current || !canvasRef.current) return;
       animationRef.current = requestAnimationFrame(draw);
       analyser.getByteTimeDomainData(dataArray);
       ctx.fillStyle = "#f9f9f9";
@@ -485,94 +499,67 @@ const StoryRecorder = ({ details = {} }) => {
     );
   }
 
-  // ─── Shared: Mic Modal ───────────────────────────────────────────────────
-  const MicModal = (
-    <Dialog
-      open={micModalOpen}
-      onClose={closeMicModal}
-      aria-labelledby="mic-dialog-title"
-      role="dialog"
-      maxWidth="sm"
-      fullWidth
-    >
-      <DialogTitle id="mic-dialog-title">
-        <b>Microphone Settings</b>
-        <IconButton
-          aria-label="Close Dialog"
-          title="Close Dialog"
-          onClick={closeMicModal}
-          sx={{ position: "absolute", right: 8, top: 8 }}
-        >
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent dividers>
-        {!recorderSupported ? (
-          <Alert severity="error">
-            Your browser does not support audio recording.
+  // ─── Mic dialog content (shared between mobile custom dialog & desktop MUI dialog) ──
+  const MicDialogContent = (
+    <>
+      {!recorderSupported ? (
+        <Alert severity="error">Your browser does not support audio recording.</Alert>
+      ) : !permissionGranted ? (
+        <>
+          <Alert severity="error" style={{ marginBottom: "1rem" }}>
+            Please grant microphone access to use this feature.
           </Alert>
-        ) : !permissionGranted ? (
-          <>
-            <Alert severity="error" style={{ marginBottom: "1rem" }}>
-              Please grant microphone access to use this feature.
-            </Alert>
-            <Button variant="contained" color="primary" onClick={requestMicPermission}>
-              Enable Microphone
-            </Button>
-          </>
-        ) : inputDevicesLoading ? (
-          <Alert severity="info">Detecting microphones...</Alert>
-        ) : inputDevices.length === 0 ? (
-          <>
-            <Alert severity="warning" style={{ marginBottom: "1rem" }}>
-              No microphone found. Please connect one and try again.
-            </Alert>
-            <Button variant="contained" color="warning" size="small" onClick={loadInputDevices}>
-              Retry
-            </Button>
-          </>
-        ) : (
-          <FormControl fullWidth size="small">
-            <InputLabel id="mic-selector-label">Select Microphone</InputLabel>
-            <Select
-              labelId="mic-selector-label"
-              aria-label="Select a microphone input"
-              inputProps={{ "aria-label": "Microphone device selector" }}
-              id="mic-selector"
-              value={selectedDeviceId || ""}
-              onChange={(e) => {
-                const newId = e.target.value;
-                if (isRecording) stopRecording();
-                setSelectedDeviceId(newId);
-                localStorage.setItem("selectedMicDeviceId", newId);
-              }}
-              label="Select Microphone"
-              input={
-                <OutlinedInput
-                  label="Select Microphone"
-                  startAdornment={
-                    <InputAdornment position="start">
-                      <MicIcon fontSize="small" />
-                    </InputAdornment>
-                  }
-                />
-              }
-            >
-              {inputDevices.map((device) => (
-                <MenuItem key={device.deviceId} value={device.deviceId}>
-                  {device.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        )}
-      </DialogContent>
-      <DialogActions>
-        <Button variant="contained" onClick={closeMicModal} autoFocus>
-          Done
-        </Button>
-      </DialogActions>
-    </Dialog>
+          <Button variant="contained" color="primary" onClick={requestMicPermission}>
+            Enable Microphone
+          </Button>
+        </>
+      ) : inputDevicesLoading ? (
+        <Alert severity="info">Detecting microphones...</Alert>
+      ) : inputDevices.length === 0 ? (
+        <>
+          <Alert severity="warning" style={{ marginBottom: "1rem" }}>
+            No microphone found. Please connect one and try again.
+          </Alert>
+          <Button variant="contained" color="warning" size="small" onClick={loadInputDevices}>
+            Retry
+          </Button>
+        </>
+      ) : (
+        <FormControl fullWidth size="small">
+          <InputLabel id="mic-selector-label">Select Microphone</InputLabel>
+          <Select
+            labelId="mic-selector-label"
+            aria-label="Select a microphone input"
+            inputProps={{ "aria-label": "Microphone device selector" }}
+            id="mic-selector"
+            value={selectedDeviceId || ""}
+            onChange={(e) => {
+              const newId = e.target.value;
+              if (isRecording) stopRecording();
+              setSelectedDeviceId(newId);
+              localStorage.setItem("selectedMicDeviceId", newId);
+            }}
+            label="Select Microphone"
+            input={
+              <OutlinedInput
+                label="Select Microphone"
+                startAdornment={
+                  <InputAdornment position="start">
+                    <MicIcon fontSize="small" />
+                  </InputAdornment>
+                }
+              />
+            }
+          >
+            {inputDevices.map((device) => (
+              <MenuItem key={device.deviceId} value={device.deviceId}>
+                {device.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      )}
+    </>
   );
 
   // ─── Shared: Hidden measurer div ─────────────────────────────────────────
@@ -661,14 +648,41 @@ const StoryRecorder = ({ details = {} }) => {
   );
 
   // ══════════════════════════════════════════════════════════════════════════
-  // MOBILE VIEW — always horizontal, rotated to landscape if phone is portrait
+  // MOBILE VIEW
   // ══════════════════════════════════════════════════════════════════════════
   if (isMobile) {
+    // ── Mobile mic dialog: custom portal-based dialog that rotates with the layout ──
+    const MobileMicDialogJSX = (
+      <MobileMicDialog open={micModalOpen} onClose={closeMicModal}>
+        {/* Title */}
+        <div className="sr-mobile-dialog-title">
+          <span>Microphone Settings</span>
+          <IconButton
+            aria-label="Close Dialog"
+            size="small"
+            onClick={closeMicModal}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </div>
+        {/* Content */}
+        <div className="sr-mobile-dialog-content">
+          {MicDialogContent}
+        </div>
+        {/* Actions */}
+        <div className="sr-mobile-dialog-actions">
+          <Button variant="contained" onClick={closeMicModal} autoFocus>
+            Done
+          </Button>
+        </div>
+      </MobileMicDialog>
+    );
+
     // Mobile — Review / Submission screen
     if (submitted) {
       return (
         <div className="sr-mobile-review-root">
-          {/* Landscape wrapper: rotates content in portrait mode */}
+          {MobileMicDialogJSX}
           <div className="sr-mobile-review-landscape-wrapper">
             <div className="sr-mobile-review-card">
               {!sending ? (
@@ -700,10 +714,7 @@ const StoryRecorder = ({ details = {} }) => {
                 </>
               ) : (
                 <>
-                  <Alert
-                    severity="success"
-                    sx={{ mb: 2, textAlign: "center", justifyContent: "center" }}
-                  >
+                  <Alert severity="success" sx={{ mb: 2, textAlign: "center", justifyContent: "center" }}>
                     Recording uploaded successfully!
                   </Alert>
                   <p>You have completed</p>
@@ -741,11 +752,10 @@ const StoryRecorder = ({ details = {} }) => {
     // Mobile — Recording screen
     return (
       <>
+        {MobileMicDialogJSX}
         <div className="sr-mobile-root">
-          {/* Landscape wrapper: rotates content 90deg when phone is in portrait */}
           <div className="sr-mobile-landscape-wrapper">
             <div className="sr-mobile-card">
-              {MicModal}
 
               {/* Header */}
               <div className="sr-mobile-header">
@@ -769,9 +779,8 @@ const StoryRecorder = ({ details = {} }) => {
                 </div>
               </div>
 
-              {/* Body: Story text (left) | Controls (right) — always row */}
+              {/* Body: Story text (left) | Controls (right) */}
               <div className="sr-mobile-body">
-                {/* Story Box */}
                 <div
                   ref={storyContainerRef}
                   className={`sr-mobile-story-box${story.lang !== "EN" ? " font-devanagari" : ""}`}
@@ -786,13 +795,8 @@ const StoryRecorder = ({ details = {} }) => {
                   )}
                 </div>
 
-                {/* Controls Panel */}
                 <div className="sr-mobile-controls">
-                  <span
-                    className="sr-mobile-timer"
-                    aria-live="polite"
-                    aria-atomic="true"
-                  >
+                  <span className="sr-mobile-timer" aria-live="polite" aria-atomic="true">
                     {formatTime(timer)}
                   </span>
                   <canvas
@@ -808,6 +812,7 @@ const StoryRecorder = ({ details = {} }) => {
                   </div>
                 </div>
               </div>
+
             </div>
           </div>
         </div>
@@ -819,6 +824,39 @@ const StoryRecorder = ({ details = {} }) => {
   // ══════════════════════════════════════════════════════════════════════════
   // DESKTOP VIEW — original layout, unchanged
   // ══════════════════════════════════════════════════════════════════════════
+
+  // Desktop uses the original MUI Dialog
+  const DesktopMicModal = (
+    <Dialog
+      open={micModalOpen}
+      onClose={closeMicModal}
+      aria-labelledby="mic-dialog-title"
+      role="dialog"
+      maxWidth="sm"
+      fullWidth
+    >
+      <DialogTitle id="mic-dialog-title">
+        <b>Microphone Settings</b>
+        <IconButton
+          aria-label="Close Dialog"
+          title="Close Dialog"
+          onClick={closeMicModal}
+          sx={{ position: "absolute", right: 8, top: 8 }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent dividers>
+        {MicDialogContent}
+      </DialogContent>
+      <DialogActions>
+        <Button variant="contained" onClick={closeMicModal} autoFocus>
+          Done
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+
   return (
     <>
       {!submitted ? (
@@ -846,7 +884,7 @@ const StoryRecorder = ({ details = {} }) => {
               gap: "20px",
             }}
           >
-            {MicModal}
+            {DesktopMicModal}
 
             {/* Top Info Row */}
             <div
@@ -1014,6 +1052,7 @@ const StoryRecorder = ({ details = {} }) => {
               textAlign: "center",
             }}
           >
+            {DesktopMicModal}
             {!sending ? (
               <>
                 <h2 style={{ textAlign: "center", marginBottom: "40px" }}>

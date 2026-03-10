@@ -1,13 +1,14 @@
 /* ============================================================
    StoryRecorder — Mobile Styles
-   Forces horizontal (landscape-style) layout on all mobile screens
-   regardless of device orientation
    ============================================================ */
 
-/* ── Mobile Root Container ── */
+/* ── Root: position:fixed so it fills screen on first paint in webview ── */
 .sr-mobile-root {
-  width: 100vw;
-  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -17,9 +18,8 @@
 }
 
 /* ── Landscape wrapper ──
-   In portrait mode: rotate 90deg + swap dimensions so the
-   component always renders in landscape orientation.
-   In landscape mode: no transform, fills naturally.
+   Portrait: rotate 90deg + swap dimensions → always looks landscape.
+   Landscape: no transform, fills naturally.
 ── */
 .sr-mobile-landscape-wrapper {
   display: flex;
@@ -35,11 +35,9 @@
   .sr-mobile-landscape-wrapper {
     transform: rotate(90deg);
     transform-origin: center center;
-    /* Swap viewport dimensions so content fills the rotated space */
     width: 100vh;
     height: 100vw;
     position: absolute;
-    /* Re-center after rotation */
     top: calc((100vh - 100vw) / 2);
     left: calc((100vw - 100vh) / 2);
     padding: 12px;
@@ -101,14 +99,14 @@
 /* ── Mobile Body: Story (left) | Controls (right) — ALWAYS ROW ── */
 .sr-mobile-body {
   display: flex;
-  flex-direction: row; /* always horizontal, no portrait override */
+  flex-direction: row;
   gap: 14px;
   align-items: stretch;
   flex: 1;
   min-height: 0;
 }
 
-/* ── Story Box (left column) ── */
+/* ── Story Box ── */
 .sr-mobile-story-box {
   flex: 1 1 60%;
   background-color: #ffffff;
@@ -131,7 +129,7 @@
   line-height: 1.5;
 }
 
-/* ── Controls Panel (right column) ── */
+/* ── Controls Panel ── */
 .sr-mobile-controls {
   flex: 0 0 120px;
   display: flex;
@@ -141,7 +139,6 @@
   gap: 10px;
 }
 
-/* Timer */
 .sr-mobile-timer {
   font-size: 14px;
   font-weight: 600;
@@ -149,7 +146,6 @@
   letter-spacing: 0.03em;
 }
 
-/* Waveform canvas */
 .sr-mobile-canvas {
   background: linear-gradient(to bottom, #fff, #f1f1f1);
   border-radius: 4px;
@@ -158,7 +154,6 @@
   height: 34px;
 }
 
-/* Buttons */
 .sr-mobile-btn-row {
   display: flex;
   flex-direction: column;
@@ -167,10 +162,96 @@
   width: 100%;
 }
 
+/* ── Dialog portal wrapper — rotates the MUI dialog in portrait mode ──
+   We render the dialog inside a fixed positioned div that we rotate,
+   matching the same transform as the landscape wrapper.
+── */
+.sr-mobile-dialog-portal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1300; /* above MUI default backdrop */
+  pointer-events: none; /* let clicks through except on dialog itself */
+}
+
+.sr-mobile-dialog-inner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+}
+
+@media (max-width: 768px) and (orientation: portrait) {
+  .sr-mobile-dialog-inner {
+    transform: rotate(90deg);
+    transform-origin: center center;
+    width: 100vh;
+    height: 100vw;
+    position: absolute;
+    top: calc((100vh - 100vw) / 2);
+    left: calc((100vw - 100vh) / 2);
+  }
+}
+
+/* The actual dialog box inside the rotated portal */
+.sr-mobile-dialog-box {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
+  width: 90%;
+  max-width: 400px;
+  max-height: 80%;
+  overflow-y: auto;
+  pointer-events: all;
+  display: flex;
+  flex-direction: column;
+}
+
+.sr-mobile-dialog-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid #eee;
+  font-size: 16px;
+  font-weight: 700;
+  color: #222;
+}
+
+.sr-mobile-dialog-content {
+  padding: 20px;
+  flex: 1;
+}
+
+.sr-mobile-dialog-actions {
+  padding: 12px 20px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Backdrop for the custom dialog */
+.sr-mobile-dialog-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1299;
+}
+
 /* ── Review / Submission Screen ── */
 .sr-mobile-review-root {
-  width: 100vw;
-  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
