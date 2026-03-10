@@ -1,52 +1,81 @@
 /* ============================================================
-   StoryRecorder — Mobile Styles (max-width: 768px)
-   NO rotation. Layout is always a horizontal row that fits
-   naturally within the portrait viewport.
+   StoryRecorder — Mobile Styles
+   Forces horizontal (landscape-style) layout on all mobile screens
+   regardless of device orientation
    ============================================================ */
 
-/* ── Root: fill exactly the viewport, no scroll ── */
+/* ── Mobile Root Container ── */
 .sr-mobile-root {
   width: 100vw;
-  height: 100dvh; /* dvh respects browser chrome better than vh */
+  height: 100vh;
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
   background: #f4f6f9;
   box-sizing: border-box;
   overflow: hidden;
-  padding: 12px;
 }
 
-/* ── Card: fills available space ── */
-.sr-mobile-card {
+/* ── Landscape wrapper ──
+   In portrait mode: rotate 90deg + swap dimensions so the
+   component always renders in landscape orientation.
+   In landscape mode: no transform, fills naturally.
+── */
+.sr-mobile-landscape-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   width: 100%;
   height: 100%;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) and (orientation: portrait) {
+  .sr-mobile-landscape-wrapper {
+    transform: rotate(90deg);
+    transform-origin: center center;
+    /* Swap viewport dimensions so content fills the rotated space */
+    width: 100vh;
+    height: 100vw;
+    position: absolute;
+    /* Re-center after rotation */
+    top: calc((100vh - 100vw) / 2);
+    left: calc((100vw - 100vh) / 2);
+    padding: 12px;
+  }
+}
+
+/* ── Mobile Card ── */
+.sr-mobile-card {
+  width: 100%;
+  max-width: 100%;
   background: #ffffff;
-  border-radius: 16px;
-  padding: 12px 14px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.09);
+  border-radius: 18px;
+  padding: 14px 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   box-sizing: border-box;
   overflow: hidden;
 }
 
-/* ── Header ── */
+/* ── Mobile Header Row ── */
 .sr-mobile-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding-bottom: 8px;
   border-bottom: 1px solid #eee;
-  gap: 6px;
+  gap: 8px;
+  flex-wrap: nowrap;
   flex-shrink: 0;
 }
 
 .sr-mobile-header-meta {
   font-size: 11px;
-  color: #888;
+  color: #666;
   white-space: nowrap;
 }
 
@@ -65,27 +94,28 @@
 .sr-mobile-header-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   flex-shrink: 0;
 }
 
-/* ── Body: story (left big area) + controls (right narrow strip) ── */
+/* ── Mobile Body: Story (left) | Controls (right) — ALWAYS ROW ── */
 .sr-mobile-body {
   display: flex;
-  flex-direction: row;
-  gap: 12px;
-  flex: 1;          /* take all remaining height */
-  min-height: 0;    /* allow shrinking inside flex parent */
-  overflow: hidden;
+  flex-direction: row; /* always horizontal, no portrait override */
+  gap: 14px;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
 }
 
-/* ── Story Box ── */
+/* ── Story Box (left column) ── */
 .sr-mobile-story-box {
-  flex: 1 1 0;      /* grow, shrink, fill */
-  background: #ffffff;
-  border-radius: 12px;
-  border: 2px solid #2f80ed;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
-  padding: 12px;
+  flex: 1 1 60%;
+  background-color: #ffffff;
+  border-radius: 14px;
+  border: 2.5px solid #2f80ed;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05), 0 8px 20px rgba(0, 0, 0, 0.07);
+  padding: 16px 14px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -96,89 +126,101 @@
 
 .sr-mobile-story-text {
   margin: 0;
-  color: #5a5a5a;
+  color: #7a7a7a;
   font-weight: 500;
   line-height: 1.5;
-  overflow: hidden;
 }
 
-/* ── Controls strip (right column) ── */
+/* ── Controls Panel (right column) ── */
 .sr-mobile-controls {
-  flex: 0 0 100px;  /* fixed width right panel */
+  flex: 0 0 120px;
   display: flex;
   flex-direction: column;
   justify-content: space-evenly;
   align-items: center;
-  gap: 8px;
-  padding: 4px 0;
+  gap: 10px;
 }
 
 /* Timer */
 .sr-mobile-timer {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
   color: #444;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
 }
 
 /* Waveform canvas */
 .sr-mobile-canvas {
-  background: linear-gradient(to bottom, #fff, #f0f0f0);
+  background: linear-gradient(to bottom, #fff, #f1f1f1);
   border-radius: 4px;
   border: 1px solid #ddd;
-  width: 95px;
-  height: 30px;
-  display: block;
+  width: 110px;
+  height: 34px;
 }
 
 /* Buttons */
 .sr-mobile-btn-row {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 8px;
   align-items: center;
   width: 100%;
-}
-
-/* Make MUI buttons compact on mobile */
-.sr-mobile-btn-row .MuiButton-root {
-  min-width: 80px !important;
-  font-size: 13px !important;
-  padding: 5px 10px !important;
 }
 
 /* ── Review / Submission Screen ── */
 .sr-mobile-review-root {
   width: 100vw;
-  height: 100dvh;
+  height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
   background: #f4f6f9;
   box-sizing: border-box;
-  padding: 16px;
   overflow: hidden;
+}
+
+.sr-mobile-review-landscape-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) and (orientation: portrait) {
+  .sr-mobile-review-landscape-wrapper {
+    transform: rotate(90deg);
+    transform-origin: center center;
+    width: 100vh;
+    height: 100vw;
+    position: absolute;
+    top: calc((100vh - 100vw) / 2);
+    left: calc((100vw - 100vh) / 2);
+    padding: 12px;
+  }
 }
 
 .sr-mobile-review-card {
   width: 100%;
-  max-width: 360px;
+  max-width: 440px;
   background: #ffffff;
-  padding: 28px 22px;
-  border-radius: 20px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.09);
+  padding: 28px 24px;
+  border-radius: 22px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
   text-align: center;
 }
 
 .sr-mobile-review-audio {
   width: 100%;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .sr-mobile-review-btn-row {
   display: flex;
   justify-content: center;
-  gap: 14px;
+  gap: 16px;
   margin-top: 20px;
   flex-wrap: wrap;
 }
