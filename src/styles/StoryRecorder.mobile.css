@@ -1,17 +1,49 @@
 /* ============================================================
-   StoryRecorder — Mobile / Landscape Styles
-   Applied when screen width <= 768px
+   StoryRecorder — Mobile Styles
+   Forces horizontal (landscape-style) layout on all mobile screens
+   regardless of device orientation
    ============================================================ */
 
 /* ── Mobile Root Container ── */
 .sr-mobile-root {
-  min-height: 100vh;
+  width: 100vw;
+  height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
   background: #f4f6f9;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* ── Landscape wrapper ──
+   In portrait mode: rotate 90deg + swap dimensions so the
+   component always renders in landscape orientation.
+   In landscape mode: no transform, fills naturally.
+── */
+.sr-mobile-landscape-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
   padding: 12px;
   box-sizing: border-box;
+}
+
+@media (max-width: 768px) and (orientation: portrait) {
+  .sr-mobile-landscape-wrapper {
+    transform: rotate(90deg);
+    transform-origin: center center;
+    /* Swap viewport dimensions so content fills the rotated space */
+    width: 100vh;
+    height: 100vw;
+    position: absolute;
+    /* Re-center after rotation */
+    top: calc((100vh - 100vw) / 2);
+    left: calc((100vw - 100vh) / 2);
+    padding: 12px;
+  }
 }
 
 /* ── Mobile Card ── */
@@ -20,12 +52,13 @@
   max-width: 100%;
   background: #ffffff;
   border-radius: 18px;
-  padding: 16px 18px;
+  padding: 14px 16px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 /* ── Mobile Header Row ── */
@@ -33,21 +66,22 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 10px;
+  padding-bottom: 8px;
   border-bottom: 1px solid #eee;
   gap: 8px;
   flex-wrap: nowrap;
+  flex-shrink: 0;
 }
 
 .sr-mobile-header-meta {
-  font-size: 12px;
+  font-size: 11px;
   color: #666;
   white-space: nowrap;
 }
 
 .sr-mobile-header-title {
   font-weight: 600;
-  font-size: 15px;
+  font-size: 14px;
   color: #333;
   text-align: center;
   flex: 1;
@@ -61,29 +95,32 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  flex-shrink: 0;
 }
 
-/* ── Mobile Landscape Body: Story | Controls side-by-side ── */
+/* ── Mobile Body: Story (left) | Controls (right) — ALWAYS ROW ── */
 .sr-mobile-body {
   display: flex;
-  flex-direction: row;
+  flex-direction: row; /* always horizontal, no portrait override */
   gap: 14px;
   align-items: stretch;
+  flex: 1;
+  min-height: 0;
 }
 
 /* ── Story Box (left column) ── */
 .sr-mobile-story-box {
-  flex: 1 1 55%;
+  flex: 1 1 60%;
   background-color: #ffffff;
-  border-radius: 16px;
+  border-radius: 14px;
   border: 2.5px solid #2f80ed;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05), 0 10px 25px rgba(0, 0, 0, 0.07);
-  padding: 20px 18px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05), 0 8px 20px rgba(0, 0, 0, 0.07);
+  padding: 16px 14px;
   display: flex;
   justify-content: center;
   align-items: center;
   text-align: center;
-  min-height: 160px;
+  overflow: hidden;
   box-sizing: border-box;
 }
 
@@ -91,23 +128,22 @@
   margin: 0;
   color: #7a7a7a;
   font-weight: 500;
-  line-height: 1.55;
+  line-height: 1.5;
 }
 
 /* ── Controls Panel (right column) ── */
 .sr-mobile-controls {
-  flex: 0 0 auto;
+  flex: 0 0 120px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: space-evenly;
   align-items: center;
-  gap: 12px;
-  min-width: 110px;
+  gap: 10px;
 }
 
 /* Timer */
 .sr-mobile-timer {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: #444;
   letter-spacing: 0.03em;
@@ -118,11 +154,11 @@
   background: linear-gradient(to bottom, #fff, #f1f1f1);
   border-radius: 4px;
   border: 1px solid #ddd;
-  width: 100%;
-  max-width: 110px;
+  width: 110px;
+  height: 34px;
 }
 
-/* Buttons row */
+/* Buttons */
 .sr-mobile-btn-row {
   display: flex;
   flex-direction: column;
@@ -133,20 +169,44 @@
 
 /* ── Review / Submission Screen ── */
 .sr-mobile-review-root {
-  min-height: 100vh;
+  width: 100vw;
+  height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
   background: #f4f6f9;
-  padding: 16px;
   box-sizing: border-box;
+  overflow: hidden;
+}
+
+.sr-mobile-review-landscape-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) and (orientation: portrait) {
+  .sr-mobile-review-landscape-wrapper {
+    transform: rotate(90deg);
+    transform-origin: center center;
+    width: 100vh;
+    height: 100vw;
+    position: absolute;
+    top: calc((100vh - 100vw) / 2);
+    left: calc((100vw - 100vh) / 2);
+    padding: 12px;
+  }
 }
 
 .sr-mobile-review-card {
   width: 100%;
-  max-width: 380px;
+  max-width: 440px;
   background: #ffffff;
-  padding: 32px 24px;
+  padding: 28px 24px;
   border-radius: 22px;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
   text-align: center;
@@ -161,34 +221,6 @@
   display: flex;
   justify-content: center;
   gap: 16px;
-  margin-top: 24px;
+  margin-top: 20px;
   flex-wrap: wrap;
-}
-
-/* ── Landscape orientation hint (optional) ── */
-@media (max-width: 768px) and (orientation: portrait) {
-  .sr-mobile-body {
-    flex-direction: column;
-  }
-
-  .sr-mobile-story-box {
-    min-height: 140px;
-    flex: unset;
-  }
-
-  .sr-mobile-controls {
-    flex-direction: row;
-    min-width: unset;
-    width: 100%;
-    justify-content: space-around;
-  }
-
-  .sr-mobile-btn-row {
-    flex-direction: row;
-    gap: 10px;
-  }
-
-  .sr-mobile-canvas {
-    max-width: 90px;
-  }
 }

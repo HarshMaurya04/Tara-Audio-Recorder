@@ -20,58 +20,45 @@ import { getSenderFromBot, closeWebView } from "../services/botExtension";
 import MicIcon from "@mui/icons-material/Mic";
 import SettingsIcon from "@mui/icons-material/Settings";
 import CloseIcon from "@mui/icons-material/Close";
-import "../styles/StoryRecorder.mobile.css"; // Mobile-specific styles
+import "../styles/StoryRecorder.mobile.css";
 
 // Default audio recording configuration
-const defaultMimeType = "audio/webm"; // Recording format
-const defaultBitrate = 64000; // Audio quality
-const maxRecordingTime = 60; // Max recording time (seconds)
+const defaultMimeType = "audio/webm";
+const defaultBitrate = 64000;
+const maxRecordingTime = 60;
 
 // Text auto-fit limits
 const minFontSize = 18;
 const maxFontSize = 30;
 
-// Exit fullscreen safely (cross-browser support)
 const exitFullscreen = () => {
-  if (document.exitFullscreen) {
-    document.exitFullscreen();
-  } else if (document.webkitExitFullscreen) {
-    document.webkitExitFullscreen(); // Safari
-  } else if (document.mozCancelFullScreen) {
-    document.mozCancelFullScreen(); // Firefox
-  } else if (document.msExitFullscreen) {
-    document.msExitFullscreen(); // IE/Edge
-  }
+  if (document.exitFullscreen) document.exitFullscreen();
+  else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+  else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
+  else if (document.msExitFullscreen) document.msExitFullscreen();
 };
 
-// Check if browser is currently in fullscreen mode
-const isFullscreen = () => {
-  return (
-    document.fullscreenElement ||
-    document.webkitFullscreenElement || // Safari
-    document.mozFullScreenElement || // Firefox
-    document.msFullscreenElement // IE/Edge
-  );
-};
+const isFullscreen = () =>
+  document.fullscreenElement ||
+  document.webkitFullscreenElement ||
+  document.mozFullScreenElement ||
+  document.msFullscreenElement;
 
-// ─── Custom hook: detect if viewport is mobile (<= 768px) ───────────────────
+// ─── Detect mobile (≤ 768px) ────────────────────────────────────────────────
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(
     () => window.matchMedia("(max-width: 768px)").matches,
   );
-
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 768px)");
     const handler = (e) => setIsMobile(e.matches);
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
   }, []);
-
   return isMobile;
 };
 
 const StoryRecorder = ({ details = {} }) => {
-  // Converts seconds into MM:SS format
   const formatTime = useCallback(
     (s) =>
       `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`,
@@ -83,13 +70,12 @@ const StoryRecorder = ({ details = {} }) => {
   const [story, setStory] = useState(null);
   const [sender, setSender] = useState(null);
 
-  const [isRecording, setIsRecording] = useState(false); // Is recording active?
-  const [timer, setTimer] = useState(0); // Recording timer
-  const [showText, setShowText] = useState(true); // Controls story visibility
-  const [initializing, setInitializing] = useState(false); // Prevent double start
-  const [stopping, setStopping] = useState(false); // Stop delay state
+  const [isRecording, setIsRecording] = useState(false);
+  const [timer, setTimer] = useState(0);
+  const [showText, setShowText] = useState(true);
+  const [initializing, setInitializing] = useState(false);
+  const [stopping, setStopping] = useState(false);
 
-  // Permission & Device State
   const [recorderSupported, setRecorderSupported] = useState(true);
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [micModalOpen, setMicModalOpen] = useState(false);
@@ -97,19 +83,19 @@ const StoryRecorder = ({ details = {} }) => {
   const [inputDevicesLoading, setInputDevicesLoading] = useState(false);
   const [selectedDeviceId, setSelectedDeviceId] = useState(null);
 
-  const [audioBlob, setAudioBlob] = useState(null); // Final recorded blob
-  const [audioURL, setAudioURL] = useState(null); // For playback
-  const [submitted, setSubmitted] = useState(false); // Toggle between record view & review view
-  const [sending, setSending] = useState(false); // Submission loading
+  const [audioBlob, setAudioBlob] = useState(null);
+  const [audioURL, setAudioURL] = useState(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
 
-  const [dynamicFontSize, setDynamicFontSize] = useState(32); // Dynamic Text Fit
+  const [dynamicFontSize, setDynamicFontSize] = useState(32);
 
-  const storyContainerRef = useRef(null); // Story box DOM
-  const measureRef = useRef(null); // Hidden measurement div
-  const canvasRef = useRef(null); // Waveform canvas
-  const mediaRecorderRef = useRef(null); // MediaRecorder instance
-  const streamRef = useRef(null); // Mic stream
-  const analyserRef = useRef(null); // Audio analyser
+  const storyContainerRef = useRef(null);
+  const measureRef = useRef(null);
+  const canvasRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const streamRef = useRef(null);
+  const analyserRef = useRef(null);
 
   const isMountedRef = useRef(true);
   const animationRef = useRef(null);
@@ -122,11 +108,8 @@ const StoryRecorder = ({ details = {} }) => {
     const loadPayload = async () => {
       try {
         const payload = await getSenderFromBot();
-
         if (!payload || !payload.story) return;
-
         setSender(payload.user);
-
         setStory({
           title: payload.story.story_name,
           grade: payload.story.grade,
@@ -139,18 +122,15 @@ const StoryRecorder = ({ details = {} }) => {
         console.error("Failed to load story payload", err);
       }
     };
-
     loadPayload();
   }, []);
 
-  // Automatically adjusts font size so text fits inside story box
   const fitTextToContainer = useCallback(() => {
     if (!storyContainerRef.current || !measureRef.current || !story?.text)
       return;
 
     const container = storyContainerRef.current;
     const measurer = measureRef.current;
-
     const containerStyles = window.getComputedStyle(container);
 
     const paddingTop = parseFloat(containerStyles.paddingTop);
@@ -169,7 +149,6 @@ const StoryRecorder = ({ details = {} }) => {
     measurer.style.padding = "0";
     measurer.style.margin = "0";
     measurer.style.border = "none";
-
     measurer.textContent = story.text;
 
     let min = minFontSize;
@@ -179,7 +158,6 @@ const StoryRecorder = ({ details = {} }) => {
     while (min <= max) {
       const mid = Math.floor((min + max) / 2);
       measurer.style.fontSize = `${mid}px`;
-
       if (measurer.scrollHeight <= availableHeight) {
         best = mid;
         min = mid + 1;
@@ -192,102 +170,74 @@ const StoryRecorder = ({ details = {} }) => {
   }, [story]);
 
   useEffect(() => {
-    requestAnimationFrame(() => {
-      fitTextToContainer();
-    });
-
+    requestAnimationFrame(() => fitTextToContainer());
     window.addEventListener("resize", fitTextToContainer);
-
-    return () => {
-      window.removeEventListener("resize", fitTextToContainer);
-    };
+    return () => window.removeEventListener("resize", fitTextToContainer);
   }, [fitTextToContainer]);
 
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
-      // exit fullscreen on unmount
       if (isFullscreen()) exitFullscreen();
     };
   }, []);
 
-  // Central cleanup for recording resources
   const cleanupRecording = () => {
     if (streamRef.current) {
-      // Stop and clean up audio stream
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
     if (audioContextRef.current) {
-      // Close audio context
-      if (audioContextRef.current.state !== "closed") {
+      if (audioContextRef.current.state !== "closed")
         audioContextRef.current.close();
-      }
       audioContextRef.current = null;
     }
     if (animationRef.current) {
-      // Cancel animation frame
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
     }
     if (timerIntervalRef.current) {
-      // Clear timer interval
       clearInterval(timerIntervalRef.current);
       timerIntervalRef.current = null;
     }
     if (mediaRecorderRef.current) {
-      // Clear MediaRecorder context
-      if (mediaRecorderRef.current.state !== "inactive") {
-        mediaRecorderRef.current.stop(); // stop if recording
-      }
+      if (mediaRecorderRef.current.state !== "inactive")
+        mediaRecorderRef.current.stop();
       mediaRecorderRef.current = null;
     }
     setTimer(0);
   };
 
   const loadInputDevices = useCallback(async () => {
-    setInputDevicesLoading(true); // Start loading
+    setInputDevicesLoading(true);
     const devices = await navigator.mediaDevices.enumerateDevices();
-    const audioInputs = devices.filter(
-      (device) => device.kind === "audioinput",
-    );
+    const audioInputs = devices.filter((d) => d.kind === "audioinput");
     const filtered = audioInputs.filter((device) => {
-      // Remove empty labels
       const label = device.label?.trim();
       if (!label) return false;
-      // Exclude common "virtual" or "default" device names if you want
-      const lowerLabel = device.label.toLowerCase();
-      if (
+      const lowerLabel = label.toLowerCase();
+      return !(
         lowerLabel.includes("virtual") ||
         lowerLabel.includes("stereo mix") ||
         lowerLabel.includes("default") ||
         lowerLabel.includes("communications device") ||
         lowerLabel.includes("communications")
-      )
-        return false;
-      return true;
+      );
     });
-    // Remove duplicates by label
     const uniqueDevices = [];
     filtered.forEach((device) => {
-      if (!uniqueDevices.some((d) => d.label === device.label)) {
+      if (!uniqueDevices.some((d) => d.label === device.label))
         uniqueDevices.push(device);
-      }
     });
-    // Sort by label
     uniqueDevices.sort((a, b) => a.label.localeCompare(b.label));
-
     setInputDevices(uniqueDevices);
-    setInputDevicesLoading(false); // Done loading
+    setInputDevicesLoading(false);
 
-    // Attempt to retrieve previously selected mic device ID from localStorage
     const savedDeviceId = localStorage.getItem("selectedMicDeviceId");
     const foundDevice = uniqueDevices.find((d) => d.deviceId === savedDeviceId);
 
-    // If saved device ID exists and is found in current device list, restore selection
     if (savedDeviceId && foundDevice) {
-      // Only set if different
       setSelectedDeviceId((prev) =>
         prev !== savedDeviceId ? savedDeviceId : prev,
       );
@@ -299,21 +249,18 @@ const StoryRecorder = ({ details = {} }) => {
       const fallbackId = uniqueDevices[0]?.deviceId;
       if (fallbackId) setSelectedDeviceId(fallbackId);
     } else if (!savedDeviceId && uniqueDevices.length > 0) {
-      // Only set a mic if no mic is currently selected or selected mic is now missing
       setSelectedDeviceId((prev) => {
         const stillValid = uniqueDevices.some((d) => d.deviceId === prev);
         if (!stillValid) {
-          if (prev !== null) {
+          if (prev !== null)
             alert(
               "Selected microphone is no longer available. Switching to a default microphone.",
             );
-          }
           return uniqueDevices[0]?.deviceId || null;
         }
         return prev;
       });
     }
-    // return true if valid devices are found
     return uniqueDevices.length > 0;
   }, []);
 
@@ -322,12 +269,10 @@ const StoryRecorder = ({ details = {} }) => {
       setRecorderSupported(false);
       return;
     }
-
     if (typeof MediaRecorder === "undefined") {
       setRecorderSupported(false);
       return;
     }
-
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       stream.getTracks().forEach((track) => track.stop());
@@ -340,10 +285,7 @@ const StoryRecorder = ({ details = {} }) => {
 
   useEffect(() => {
     checkSupportAndPermission();
-
-    return () => {
-      cleanupRecording();
-    };
+    return () => cleanupRecording();
   }, [checkSupportAndPermission]);
 
   const requestMicPermission = useCallback(() => {
@@ -357,7 +299,6 @@ const StoryRecorder = ({ details = {} }) => {
       .catch((e) => {
         console.log("mic permission error: ", e);
         setPermissionGranted(false);
-        // Show an alert on explicit denial
         if (e.name === "NotAllowedError" || e.name === "SecurityError") {
           alert(
             "Microphone access was denied. Please allow microphone permission in your browser settings.",
@@ -373,24 +314,19 @@ const StoryRecorder = ({ details = {} }) => {
     const ctx = canvas?.getContext("2d");
     const analyser = analyserRef.current;
     const dataArray = dataArrayRef.current;
-
     if (!canvas || !ctx || !analyser || !dataArray) return;
 
     const bufferLength = analyser.fftSize;
-
     const draw = () => {
       if (!analyserRef.current || !dataArrayRef.current || !canvasRef.current)
         return;
-
       animationRef.current = requestAnimationFrame(draw);
-
       analyser.getByteTimeDomainData(dataArray);
       ctx.fillStyle = "#f9f9f9";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.lineWidth = 2;
       ctx.strokeStyle = "#0077cc";
       ctx.beginPath();
-
       const sliceWidth = canvas.width / bufferLength;
       let x = 0;
       for (let i = 0; i < bufferLength; i++) {
@@ -399,11 +335,9 @@ const StoryRecorder = ({ details = {} }) => {
         i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
         x += sliceWidth;
       }
-
       ctx.lineTo(canvas.width, canvas.height / 2);
       ctx.stroke();
     };
-
     draw();
   };
 
@@ -412,7 +346,6 @@ const StoryRecorder = ({ details = {} }) => {
       setMicModalOpen(true);
       return;
     }
-    // Prevent duplicate starts
     if (isRecording || initializing) return;
 
     setAudioBlob(null);
@@ -422,17 +355,12 @@ const StoryRecorder = ({ details = {} }) => {
     setTimer(0);
 
     try {
-      const options = {
-        mimeType: defaultMimeType,
-        audioBitsPerSecond: defaultBitrate,
-      };
-
+      const options = { mimeType: defaultMimeType, audioBitsPerSecond: defaultBitrate };
       if (!MediaRecorder.isTypeSupported(options.mimeType)) {
         alert(`MIME type not supported: ${options.mimeType}`);
         stopRecording();
         return;
       }
-
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
@@ -442,15 +370,12 @@ const StoryRecorder = ({ details = {} }) => {
       streamRef.current = stream;
       audioChunksRef.current = [];
 
-      audioContextRef.current = new (
-        window.AudioContext || window.webkitAudioContext
-      )();
+      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
       const source = audioContextRef.current.createMediaStreamSource(stream);
       analyserRef.current = audioContextRef.current.createAnalyser();
       analyserRef.current.fftSize = 1024;
       dataArrayRef.current = new Uint8Array(analyserRef.current.fftSize);
       source.connect(analyserRef.current);
-
       drawWaveform();
 
       const mediaRecorder = new MediaRecorder(stream, options);
@@ -459,22 +384,14 @@ const StoryRecorder = ({ details = {} }) => {
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
-
       mediaRecorder.onstop = async () => {
-        const blob = new Blob(audioChunksRef.current, {
-          type: options.mimeType,
-        });
-
+        const blob = new Blob(audioChunksRef.current, { type: options.mimeType });
         setAudioBlob(blob);
         setAudioURL(URL.createObjectURL(blob));
-
-        if (isMountedRef.current) {
-          setStopping(false);
-        }
+        if (isMountedRef.current) setStopping(false);
         audioChunksRef.current = [];
         cleanupRecording();
       };
-
       mediaRecorder.start();
     } catch (err) {
       console.error("Recording error:", err);
@@ -491,9 +408,8 @@ const StoryRecorder = ({ details = {} }) => {
       if (mediaRecorderRef.current && isRecording) {
         setStopping(true);
         setIsRecording(false);
-        // Delay stopping by 1 second
         setTimeout(() => {
-          setShowText(false); // hide text after recording stops
+          setShowText(false);
           mediaRecorderRef.current?.stop();
         }, 1000);
       }
@@ -503,31 +419,18 @@ const StoryRecorder = ({ details = {} }) => {
     }
   }, [isRecording]);
 
-  // Modal close handler
-  const closeMicModal = () => {
-    setMicModalOpen(false);
-  };
+  const closeMicModal = () => setMicModalOpen(false);
 
   useEffect(() => {
     if (!navigator.mediaDevices?.addEventListener) return;
-
-    const handleDeviceChange = async () => {
-      await loadInputDevices();
-    };
-
+    const handleDeviceChange = async () => await loadInputDevices();
     navigator.mediaDevices.addEventListener("devicechange", handleDeviceChange);
-
-    return () => {
-      navigator.mediaDevices.removeEventListener(
-        "devicechange",
-        handleDeviceChange,
-      );
-    };
+    return () =>
+      navigator.mediaDevices.removeEventListener("devicechange", handleDeviceChange);
   }, [loadInputDevices]);
 
   useEffect(() => {
     if (!isRecording) return;
-    // Timer interval - increments every second
     const intervalId = setInterval(() => {
       setTimer((prev) => {
         const next = prev + 1;
@@ -538,30 +441,21 @@ const StoryRecorder = ({ details = {} }) => {
         return next;
       });
     }, 1000);
-
     return () => clearInterval(intervalId);
   }, [isRecording, stopRecording]);
 
   useEffect(() => {
     if (!isRecording) return;
-    // Stop recording if tab becomes inactive
     const handleVisibilityChange = () => {
-      if (document.hidden) {
-        stopRecording();
-      }
+      if (document.hidden) stopRecording();
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
+    return () =>
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
   }, [isRecording, stopRecording]);
 
-  // When audioBlob becomes null (Retry clicked), show story text again
   useEffect(() => {
-    if (!audioBlob) {
-      setShowText(true);
-    }
+    if (!audioBlob) setShowText(true);
   }, [audioBlob]);
 
   const handleFinalSubmit = async () => {
@@ -569,9 +463,7 @@ const StoryRecorder = ({ details = {} }) => {
       alert("No audio recorded");
       return;
     }
-
     setSending(true);
-
     try {
       if (sender) {
         uploadAudioToBackend(audioBlob, sender, story);
@@ -583,7 +475,7 @@ const StoryRecorder = ({ details = {} }) => {
     }
   };
 
-  // ─── Loading state ───────────────────────────────────────────────────────
+  // ─── Loading ─────────────────────────────────────────────────────────────
   if (!story) {
     return (
       <div style={{ textAlign: "center", marginTop: 100 }}>
@@ -593,7 +485,7 @@ const StoryRecorder = ({ details = {} }) => {
     );
   }
 
-  // ─── Shared: Mic Permission Modal ────────────────────────────────────────
+  // ─── Shared: Mic Modal ───────────────────────────────────────────────────
   const MicModal = (
     <Dialog
       open={micModalOpen}
@@ -614,7 +506,7 @@ const StoryRecorder = ({ details = {} }) => {
           <CloseIcon />
         </IconButton>
       </DialogTitle>
-      <DialogContent dividers aria-describedby="mic-dialog-description">
+      <DialogContent dividers>
         {!recorderSupported ? (
           <Alert severity="error">
             Your browser does not support audio recording.
@@ -624,11 +516,7 @@ const StoryRecorder = ({ details = {} }) => {
             <Alert severity="error" style={{ marginBottom: "1rem" }}>
               Please grant microphone access to use this feature.
             </Alert>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={requestMicPermission}
-            >
+            <Button variant="contained" color="primary" onClick={requestMicPermission}>
               Enable Microphone
             </Button>
           </>
@@ -639,12 +527,7 @@ const StoryRecorder = ({ details = {} }) => {
             <Alert severity="warning" style={{ marginBottom: "1rem" }}>
               No microphone found. Please connect one and try again.
             </Alert>
-            <Button
-              variant="contained"
-              color="warning"
-              size="small"
-              onClick={loadInputDevices}
-            >
+            <Button variant="contained" color="warning" size="small" onClick={loadInputDevices}>
               Retry
             </Button>
           </>
@@ -692,7 +575,7 @@ const StoryRecorder = ({ details = {} }) => {
     </Dialog>
   );
 
-  // ─── Shared: Hidden measurement div ─────────────────────────────────────
+  // ─── Shared: Hidden measurer div ─────────────────────────────────────────
   const HiddenMeasurer = (
     <div
       ref={measureRef}
@@ -710,7 +593,7 @@ const StoryRecorder = ({ details = {} }) => {
     />
   );
 
-  // ─── Shared: Record / Stop / Finish buttons ──────────────────────────────
+  // ─── Shared: Start / Stop button ─────────────────────────────────────────
   const RecordButton = !isRecording ? (
     <Button
       variant="contained"
@@ -777,178 +660,152 @@ const StoryRecorder = ({ details = {} }) => {
     </Button>
   );
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // MOBILE VIEW
-  // ════════════════════════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════════════════════
+  // MOBILE VIEW — always horizontal, rotated to landscape if phone is portrait
+  // ══════════════════════════════════════════════════════════════════════════
   if (isMobile) {
     // Mobile — Review / Submission screen
     if (submitted) {
       return (
         <div className="sr-mobile-review-root">
-          <div className="sr-mobile-review-card">
-            {!sending ? (
-              <>
-                <h2 style={{ marginBottom: 24 }}>Recorded Audio</h2>
-                {audioURL && (
-                  <audio
-                    controls
-                    src={audioURL}
-                    className="sr-mobile-review-audio"
-                  />
-                )}
-                <div className="sr-mobile-review-btn-row">
-                  <Button
-                    variant="contained"
-                    sx={{
-                      backgroundColor: "#ef5350",
-                      borderRadius: "30px",
-                      textTransform: "none",
-                    }}
-                    onClick={() => {
-                      setAudioBlob(null);
-                      setAudioURL(null);
-                      setSubmitted(false);
-                    }}
+          {/* Landscape wrapper: rotates content in portrait mode */}
+          <div className="sr-mobile-review-landscape-wrapper">
+            <div className="sr-mobile-review-card">
+              {!sending ? (
+                <>
+                  <h2 style={{ marginBottom: 20 }}>Recorded Audio</h2>
+                  {audioURL && (
+                    <audio controls src={audioURL} className="sr-mobile-review-audio" />
+                  )}
+                  <div className="sr-mobile-review-btn-row">
+                    <Button
+                      variant="contained"
+                      sx={{ backgroundColor: "#ef5350", borderRadius: "30px", textTransform: "none" }}
+                      onClick={() => {
+                        setAudioBlob(null);
+                        setAudioURL(null);
+                        setSubmitted(false);
+                      }}
+                    >
+                      Retry
+                    </Button>
+                    <Button
+                      variant="contained"
+                      sx={{ backgroundColor: "#1976d2", borderRadius: "30px", textTransform: "none" }}
+                      onClick={handleFinalSubmit}
+                    >
+                      Submit Attempt
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Alert
+                    severity="success"
+                    sx={{ mb: 2, textAlign: "center", justifyContent: "center" }}
                   >
-                    Retry
-                  </Button>
-                  <Button
-                    variant="contained"
-                    sx={{
-                      backgroundColor: "#1976d2",
-                      borderRadius: "30px",
-                      textTransform: "none",
-                    }}
-                    onClick={handleFinalSubmit}
-                  >
-                    Submit Attempt
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <>
-                <Alert
-                  severity="success"
-                  sx={{
-                    mb: 3,
-                    textAlign: "center",
-                    justifyContent: "center",
-                    maxWidth: "300px",
-                    margin: "0 auto 20px",
-                  }}
-                >
-                  Recording uploaded successfully!
-                </Alert>
-                <p>You have completed</p>
-                <strong>{story.title}</strong>
-                <p style={{ marginTop: 16 }}>What would you like to do next?</p>
-                <div className="sr-mobile-review-btn-row">
-                  <Button
-                    variant="contained"
-                    sx={{
-                      backgroundColor: "#4caf50",
-                      borderRadius: "30px",
-                      textTransform: "none",
-                    }}
-                    onClick={() => {
-                      setAudioBlob(null);
-                      setAudioURL(null);
-                      setSubmitted(false);
-                      setSending(false);
-                    }}
-                  >
-                    Record Again
-                  </Button>
-                  <Button
-                    variant="contained"
-                    sx={{
-                      backgroundColor: "#1976d2",
-                      borderRadius: "30px",
-                      textTransform: "none",
-                    }}
-                    onClick={() => closeWebView()}
-                  >
-                    Back to Chat
-                  </Button>
-                </div>
-              </>
-            )}
+                    Recording uploaded successfully!
+                  </Alert>
+                  <p>You have completed</p>
+                  <strong>{story.title}</strong>
+                  <p style={{ marginTop: 14 }}>What would you like to do next?</p>
+                  <div className="sr-mobile-review-btn-row">
+                    <Button
+                      variant="contained"
+                      sx={{ backgroundColor: "#4caf50", borderRadius: "30px", textTransform: "none" }}
+                      onClick={() => {
+                        setAudioBlob(null);
+                        setAudioURL(null);
+                        setSubmitted(false);
+                        setSending(false);
+                      }}
+                    >
+                      Record Again
+                    </Button>
+                    <Button
+                      variant="contained"
+                      sx={{ backgroundColor: "#1976d2", borderRadius: "30px", textTransform: "none" }}
+                      onClick={() => closeWebView()}
+                    >
+                      Back to Chat
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       );
     }
 
-    // Mobile — Recording screen (horizontal layout)
+    // Mobile — Recording screen
     return (
       <>
         <div className="sr-mobile-root">
-          <div className="sr-mobile-card">
-            {MicModal}
+          {/* Landscape wrapper: rotates content 90deg when phone is in portrait */}
+          <div className="sr-mobile-landscape-wrapper">
+            <div className="sr-mobile-card">
+              {MicModal}
 
-            {/* Header */}
-            <div className="sr-mobile-header">
-              <span className="sr-mobile-header-meta">
-                Class: {story.grade} |{" "}
-                {story.lang === "EN" ? "English" : "Hindi"}
-              </span>
-              <span className="sr-mobile-header-title">
-                {story.title || "Untitled Story"}
-              </span>
-              <div className="sr-mobile-header-actions">
-                <IconButton
-                  aria-label="Open microphone settings"
-                  size="small"
-                  color="info"
-                  onClick={() => setMicModalOpen(true)}
-                  title="Microphone Settings"
-                  sx={{ padding: "0 4px" }}
-                >
-                  <SettingsIcon fontSize="small" />
-                </IconButton>
-              </div>
-            </div>
-
-            {/* Body: Story text (left) | Controls (right) */}
-            <div className="sr-mobile-body">
-              {/* Story Box */}
-              <div
-                ref={storyContainerRef}
-                className={`sr-mobile-story-box${story.lang !== "EN" ? " font-devanagari" : ""}`}
-              >
-                {showText && (
-                  <p
-                    className="sr-mobile-story-text"
-                    style={{ fontSize: dynamicFontSize }}
-                  >
-                    {story.text || "Your story paragraph here"}
-                  </p>
-                )}
-              </div>
-
-              {/* Controls Panel */}
-              <div className="sr-mobile-controls">
-                {/* Timer */}
-                <span
-                  className="sr-mobile-timer"
-                  aria-live="polite"
-                  aria-atomic="true"
-                >
-                  {formatTime(timer)}
+              {/* Header */}
+              <div className="sr-mobile-header">
+                <span className="sr-mobile-header-meta">
+                  Class: {story.grade} | {story.lang === "EN" ? "English" : "Hindi"}
                 </span>
+                <span className="sr-mobile-header-title">
+                  {story.title || "Untitled Story"}
+                </span>
+                <div className="sr-mobile-header-actions">
+                  <IconButton
+                    aria-label="Open microphone settings"
+                    size="small"
+                    color="info"
+                    onClick={() => setMicModalOpen(true)}
+                    title="Microphone Settings"
+                    sx={{ padding: "0 4px" }}
+                  >
+                    <SettingsIcon fontSize="small" />
+                  </IconButton>
+                </div>
+              </div>
 
-                {/* Waveform */}
-                <canvas
-                  ref={canvasRef}
-                  width={110}
-                  height={36}
-                  className="sr-mobile-canvas"
-                  aria-hidden="true"
-                />
+              {/* Body: Story text (left) | Controls (right) — always row */}
+              <div className="sr-mobile-body">
+                {/* Story Box */}
+                <div
+                  ref={storyContainerRef}
+                  className={`sr-mobile-story-box${story.lang !== "EN" ? " font-devanagari" : ""}`}
+                >
+                  {showText && (
+                    <p
+                      className="sr-mobile-story-text"
+                      style={{ fontSize: dynamicFontSize }}
+                    >
+                      {story.text || "Your story paragraph here"}
+                    </p>
+                  )}
+                </div>
 
-                {/* Start / Stop / Finish */}
-                <div className="sr-mobile-btn-row">
-                  {RecordButton}
-                  {FinishButton}
+                {/* Controls Panel */}
+                <div className="sr-mobile-controls">
+                  <span
+                    className="sr-mobile-timer"
+                    aria-live="polite"
+                    aria-atomic="true"
+                  >
+                    {formatTime(timer)}
+                  </span>
+                  <canvas
+                    ref={canvasRef}
+                    width={110}
+                    height={34}
+                    className="sr-mobile-canvas"
+                    aria-hidden="true"
+                  />
+                  <div className="sr-mobile-btn-row">
+                    {RecordButton}
+                    {FinishButton}
+                  </div>
                 </div>
               </div>
             </div>
@@ -959,9 +816,9 @@ const StoryRecorder = ({ details = {} }) => {
     );
   }
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // DESKTOP VIEW  (original layout — unchanged)
-  // ════════════════════════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════════════════════
+  // DESKTOP VIEW — original layout, unchanged
+  // ══════════════════════════════════════════════════════════════════════════
   return (
     <>
       {!submitted ? (
@@ -991,7 +848,7 @@ const StoryRecorder = ({ details = {} }) => {
           >
             {MicModal}
 
-            {/* Top Info Row: Details | Title | Mic Settings */}
+            {/* Top Info Row */}
             <div
               style={{
                 display: "flex",
@@ -1015,7 +872,6 @@ const StoryRecorder = ({ details = {} }) => {
                   color: "#333",
                 }}
               >
-                {/* Details */}
                 <div
                   style={{
                     fontSize: 14,
@@ -1031,12 +887,9 @@ const StoryRecorder = ({ details = {} }) => {
                     {story.lang === "EN" ? "English" : "Hindi"}
                   </p>
                 </div>
-
                 <span style={{ fontWeight: "600", fontSize: 18 }}>
                   {story.title || "Untitled Story"}
                 </span>
-
-                {/* Mic info */}
                 <div
                   style={{
                     display: "flex",
@@ -1070,8 +923,7 @@ const StoryRecorder = ({ details = {} }) => {
                 height: "300px",
                 borderRadius: "20px",
                 border: "3px solid #2f80ed",
-                boxShadow:
-                  "0 4px 8px rgba(0,0,0,0.05), 0 15px 35px rgba(0,0,0,0.08)",
+                boxShadow: "0 4px 8px rgba(0,0,0,0.05), 0 15px 35px rgba(0,0,0,0.08)",
                 padding: "50px 40px",
                 display: "flex",
                 justifyContent: "center",
@@ -1095,23 +947,9 @@ const StoryRecorder = ({ details = {} }) => {
             </div>
 
             {/* Control Row */}
-            <div
-              style={{ display: "flex", alignItems: "center", marginTop: 20 }}
-            >
-              {/* Left: Timer and waveform */}
-              <div
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "1rem",
-                }}
-              >
-                <span
-                  style={{ fontSize: 16, width: 50 }}
-                  aria-live="polite"
-                  aria-atomic="true"
-                >
+            <div style={{ display: "flex", alignItems: "center", marginTop: 20 }}>
+              <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "1rem" }}>
+                <span style={{ fontSize: 16, width: 50 }} aria-live="polite" aria-atomic="true">
                   {formatTime(timer)}
                 </span>
                 <canvas
@@ -1127,7 +965,6 @@ const StoryRecorder = ({ details = {} }) => {
                 />
               </div>
 
-              {/* Center: Start/Stop and Finish */}
               <div style={{ flex: 1, textAlign: "center" }}>
                 {RecordButton}
                 {audioBlob && !isRecording && (
@@ -1149,11 +986,9 @@ const StoryRecorder = ({ details = {} }) => {
                 )}
               </div>
 
-              {/* Right: spacer */}
               <div style={{ flex: 1 }} />
             </div>
           </div>
-
           {HiddenMeasurer}
         </div>
       ) : (
@@ -1189,21 +1024,10 @@ const StoryRecorder = ({ details = {} }) => {
                     <audio controls src={audioURL} style={{ width: "100%" }} />
                   )}
                 </div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    gap: "20px",
-                    marginTop: "30px",
-                  }}
-                >
+                <div style={{ display: "flex", justifyContent: "center", gap: "20px", marginTop: "30px" }}>
                   <Button
                     variant="contained"
-                    sx={{
-                      backgroundColor: "#ef5350",
-                      borderRadius: "30px",
-                      textTransform: "none",
-                    }}
+                    sx={{ backgroundColor: "#ef5350", borderRadius: "30px", textTransform: "none" }}
                     onClick={() => {
                       setAudioBlob(null);
                       setAudioURL(null);
@@ -1214,11 +1038,7 @@ const StoryRecorder = ({ details = {} }) => {
                   </Button>
                   <Button
                     variant="contained"
-                    sx={{
-                      backgroundColor: "#1976d2",
-                      borderRadius: "30px",
-                      textTransform: "none",
-                    }}
+                    sx={{ backgroundColor: "#1976d2", borderRadius: "30px", textTransform: "none" }}
                     onClick={handleFinalSubmit}
                   >
                     Submit Attempt
@@ -1229,35 +1049,17 @@ const StoryRecorder = ({ details = {} }) => {
               <div style={{ textAlign: "center" }}>
                 <Alert
                   severity="success"
-                  sx={{
-                    mb: 3,
-                    textAlign: "center",
-                    justifyContent: "center",
-                    maxWidth: "300px",
-                    margin: "0 auto",
-                  }}
+                  sx={{ mb: 3, textAlign: "center", justifyContent: "center", maxWidth: "300px", margin: "0 auto" }}
                 >
                   Recording uploaded successfully!
                 </Alert>
                 <p>You have completed</p>
                 <strong>{story.title}</strong>
                 <p style={{ marginTop: 20 }}>What would you like to do next?</p>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    gap: "16px",
-                    marginTop: "20px",
-                    flexWrap: "wrap",
-                  }}
-                >
+                <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "20px", flexWrap: "wrap" }}>
                   <Button
                     variant="contained"
-                    sx={{
-                      backgroundColor: "#4caf50",
-                      borderRadius: "30px",
-                      textTransform: "none",
-                    }}
+                    sx={{ backgroundColor: "#4caf50", borderRadius: "30px", textTransform: "none" }}
                     onClick={() => {
                       setAudioBlob(null);
                       setAudioURL(null);
@@ -1269,11 +1071,7 @@ const StoryRecorder = ({ details = {} }) => {
                   </Button>
                   <Button
                     variant="contained"
-                    sx={{
-                      backgroundColor: "#1976d2",
-                      borderRadius: "30px",
-                      textTransform: "none",
-                    }}
+                    sx={{ backgroundColor: "#1976d2", borderRadius: "30px", textTransform: "none" }}
                     onClick={() => closeWebView()}
                   >
                     Back to Chat
