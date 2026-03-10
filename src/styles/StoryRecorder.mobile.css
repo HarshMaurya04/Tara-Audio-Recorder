@@ -162,18 +162,15 @@
   width: 100%;
 }
 
-/* ── Dialog portal wrapper — rotates the MUI dialog in portrait mode ──
-   We render the dialog inside a fixed positioned div that we rotate,
-   matching the same transform as the landscape wrapper.
-── */
+/* ── Dialog portal wrapper ── */
 .sr-mobile-dialog-portal {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 1300; /* above MUI default backdrop */
-  pointer-events: none; /* let clicks through except on dialog itself */
+  z-index: 1300;
+  pointer-events: none;
 }
 
 .sr-mobile-dialog-inner {
@@ -197,15 +194,15 @@
   }
 }
 
-/* The actual dialog box inside the rotated portal */
+/* The actual dialog box */
 .sr-mobile-dialog-box {
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
   width: 90%;
-  max-width: 400px;
-  max-height: 80%;
-  overflow-y: auto;
+  max-width: 420px;
+  max-height: 85%;
+  overflow: visible; /* allow custom dropdown to overflow */
   pointer-events: all;
   display: flex;
   flex-direction: column;
@@ -220,11 +217,13 @@
   font-size: 16px;
   font-weight: 700;
   color: #222;
+  flex-shrink: 0;
 }
 
 .sr-mobile-dialog-content {
   padding: 20px;
   flex: 1;
+  overflow: visible; /* allow dropdown to overflow */
 }
 
 .sr-mobile-dialog-actions {
@@ -232,9 +231,10 @@
   border-top: 1px solid #eee;
   display: flex;
   justify-content: flex-end;
+  flex-shrink: 0;
 }
 
-/* Backdrop for the custom dialog */
+/* Backdrop */
 .sr-mobile-dialog-backdrop {
   position: fixed;
   top: 0;
@@ -243,6 +243,112 @@
   height: 100%;
   background: rgba(0, 0, 0, 0.45);
   z-index: 1299;
+}
+
+/* ── Custom Mic Selector (replaces MUI Select to avoid portal escaping rotation) ── */
+.sr-mic-selector-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.sr-mic-selector-label {
+  display: block;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.sr-mic-selector-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1.5px solid #c4c4c4;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+  text-align: left;
+}
+
+.sr-mic-selector-trigger:hover {
+  border-color: #1976d2;
+}
+
+.sr-mic-selector-trigger:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.15);
+}
+
+.sr-mic-selector-trigger-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.sr-mic-selector-trigger-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sr-mic-selector-arrow {
+  flex-shrink: 0;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid #666;
+  transition: transform 0.15s;
+}
+
+.sr-mic-selector-arrow.open {
+  transform: rotate(180deg);
+}
+
+/* Dropdown list — renders INSIDE the dialog, no portal escape */
+.sr-mic-selector-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  z-index: 10; /* local stacking, inside rotated dialog */
+  overflow: hidden;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.sr-mic-selector-option {
+  padding: 11px 14px;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+  transition: background 0.1s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sr-mic-selector-option:hover {
+  background: #f0f4ff;
+}
+
+.sr-mic-selector-option.selected {
+  background: #e8f0fe;
+  color: #1976d2;
+  font-weight: 600;
 }
 
 /* ── Review / Submission Screen ── */
