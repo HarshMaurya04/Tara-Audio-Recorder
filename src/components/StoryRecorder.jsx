@@ -100,17 +100,6 @@ const StoryRecorder = ({ details = {} }) => {
   const audioContextRef = useRef(null);
   const dataArrayRef = useRef(null);
 
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
   useEffect(() => {
     const loadPayload = async () => {
       try {
@@ -594,126 +583,14 @@ const StoryRecorder = ({ details = {} }) => {
     );
   }
 
-  if (isMobile) {
-    return (
-      <>
-        {!submitted ? (
-          <div className="mobileContainer">
-            <div className="mobileCard">
-              {/* STORY BOX */}
-              <div ref={storyContainerRef} className="mobileStoryBox">
-                {showText && (
-                  <p
-                    style={{
-                      fontSize: dynamicFontSize,
-                      margin: 0,
-                      color: "#7a7a7a",
-                      fontWeight: 500,
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    {story.text}
-                  </p>
-                )}
-              </div>
-
-              {/* CONTROLS */}
-              <div className="mobileControls">
-                <span>{formatTime(timer)}</span>
-
-                <canvas ref={canvasRef} width={200} height={40} />
-
-                {!isRecording ? (
-                  <Button onClick={startRecording}>Start</Button>
-                ) : (
-                  <Button onClick={stopRecording}>Stop</Button>
-                )}
-
-                {audioBlob && !isRecording && (
-                  <Button onClick={() => setSubmitted(true)}>Finish</Button>
-                )}
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="mobileReviewCard">
-            {!sending ? (
-              <>
-                <h2>Recorded Audio</h2>
-
-                {audioURL && <audio controls src={audioURL} />}
-
-                <div className="mobileButtons">
-                  <Button
-                    onClick={() => {
-                      setAudioBlob(null);
-                      setAudioURL(null);
-                      setSubmitted(false);
-                    }}
-                  >
-                    Retry
-                  </Button>
-
-                  <Button onClick={handleFinalSubmit}>Submit Attempt</Button>
-                </div>
-              </>
-            ) : (
-              <div>
-                <Alert severity="success">
-                  Recording uploaded successfully!
-                </Alert>
-
-                <p>You have completed</p>
-                <strong>{story.title}</strong>
-
-                <div className="mobileButtons">
-                  <Button
-                    onClick={() => {
-                      setAudioBlob(null);
-                      setAudioURL(null);
-                      setSubmitted(false);
-                      setSending(false);
-                    }}
-                  >
-                    Record Again
-                  </Button>
-
-                  <Button onClick={closeWebView}>Back to Chat</Button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </>
-    );
-  }
-
   return (
     <>
       {!submitted ? (
         <div
-          style={{
-            minHeight: "100vh",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            background: "#f4f6f9",
-            padding: "20px",
-            boxSizing: "border-box",
-          }}
+          className="recorderContainer"
         >
           <div
-            style={{
-              width: "100%",
-              maxWidth: "850px",
-              background: "#ffffff",
-              borderRadius: "24px",
-              padding: "30px 60px",
-              boxShadow: "0 15px 40px rgba(0,0,0,0.08)",
-              display: "flex",
-              flexDirection: "column",
-              gap: "20px",
-            }}
+            className="recorderCard"
           >
             {/* Mic Modal */}
             <Dialog
@@ -931,7 +808,7 @@ const StoryRecorder = ({ details = {} }) => {
 
             {/* Control Row */}
             <div
-              style={{ display: "flex", alignItems: "center", marginTop: 20 }}
+              className="controlRow"
             >
               {/* Left: Timer and waveform */}
               <div
