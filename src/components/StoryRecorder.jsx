@@ -20,6 +20,7 @@ import { getSenderFromBot, closeWebView } from "../services/botExtension";
 import MicIcon from "@mui/icons-material/Mic";
 import SettingsIcon from "@mui/icons-material/Settings";
 import CloseIcon from "@mui/icons-material/Close";
+import "../styles/StoryRecorder.mobile.css"; // Mobile-specific styles
 
 // Default audio recording configuration
 const defaultMimeType = "audio/webm"; // Recording format
@@ -53,6 +54,22 @@ const isFullscreen = () => {
   );
 };
 
+// ─── Custom hook: detect if viewport is mobile (<= 768px) ───────────────────
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(
+    () => window.matchMedia("(max-width: 768px)").matches,
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    const handler = (e) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  return isMobile;
+};
+
 const StoryRecorder = ({ details = {} }) => {
   // Converts seconds into MM:SS format
   const formatTime = useCallback(
@@ -60,6 +77,8 @@ const StoryRecorder = ({ details = {} }) => {
       `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`,
     [],
   );
+
+  const isMobile = useIsMobile();
 
   const [story, setStory] = useState(null);
   const [sender, setSender] = useState(null);
@@ -419,7 +438,6 @@ const StoryRecorder = ({ details = {} }) => {
           deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
         },
       });
-      const trackSettings = stream.getAudioTracks()[0]?.getSettings?.() || null;
       setIsRecording(true);
       streamRef.current = stream;
       audioChunksRef.current = [];
@@ -429,7 +447,7 @@ const StoryRecorder = ({ details = {} }) => {
       )();
       const source = audioContextRef.current.createMediaStreamSource(stream);
       analyserRef.current = audioContextRef.current.createAnalyser();
-      analyserRef.current.fftSize = 1024; // decrease this if high res is not needed to 1024 or 512
+      analyserRef.current.fftSize = 1024;
       dataArrayRef.current = new Uint8Array(analyserRef.current.fftSize);
       source.connect(analyserRef.current);
 
@@ -454,7 +472,7 @@ const StoryRecorder = ({ details = {} }) => {
           setStopping(false);
         }
         audioChunksRef.current = [];
-        cleanupRecording(); // <-- Centralized cleanup
+        cleanupRecording();
       };
 
       mediaRecorder.start();
@@ -462,7 +480,7 @@ const StoryRecorder = ({ details = {} }) => {
       console.error("Recording error:", err);
       alert("Microphone access failed.");
       setIsRecording(false);
-      cleanupRecording(); // <-- On error cleanup
+      cleanupRecording();
     } finally {
       setInitializing(false);
     }
@@ -514,9 +532,8 @@ const StoryRecorder = ({ details = {} }) => {
       setTimer((prev) => {
         const next = prev + 1;
         if (next > maxRecordingTime) {
-          // your max recording time
           stopRecording();
-          return prev; // prevent timer going beyond max
+          return prev;
         }
         return next;
       });
@@ -553,12 +570,10 @@ const StoryRecorder = ({ details = {} }) => {
       return;
     }
 
-    // show confirmation UI
     setSending(true);
 
     try {
       if (sender) {
-        // Upload in background
         uploadAudioToBackend(audioBlob, sender, story);
       } else {
         console.warn("Sender not found in payload");
@@ -566,13 +581,9 @@ const StoryRecorder = ({ details = {} }) => {
     } catch (err) {
       console.error("Upload error:", err);
     }
-
-    // // Close WebView after 3 seconds
-    // setTimeout(() => {
-    //   closeWebView();
-    // }, 3000);
   };
 
+  // ─── Loading state ───────────────────────────────────────────────────────
   if (!story) {
     return (
       <div style={{ textAlign: "center", marginTop: 100 }}>
@@ -582,6 +593,375 @@ const StoryRecorder = ({ details = {} }) => {
     );
   }
 
+  // ─── Shared: Mic Permission Modal ────────────────────────────────────────
+  const MicModal = (
+    <Dialog
+      open={micModalOpen}
+      onClose={closeMicModal}
+      aria-labelledby="mic-dialog-title"
+      role="dialog"
+      maxWidth="sm"
+      fullWidth
+    >
+      <DialogTitle id="mic-dialog-title">
+        <b>Microphone Settings</b>
+        <IconButton
+          aria-label="Close Dialog"
+          title="Close Dialog"
+          onClick={closeMicModal}
+          sx={{ position: "absolute", right: 8, top: 8 }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent dividers aria-describedby="mic-dialog-description">
+        {!recorderSupported ? (
+          <Alert severity="error">
+            Your browser does not support audio recording.
+          </Alert>
+        ) : !permissionGranted ? (
+          <>
+            <Alert severity="error" style={{ marginBottom: "1rem" }}>
+              Please grant microphone access to use this feature.
+            </Alert>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={requestMicPermission}
+            >
+              Enable Microphone
+            </Button>
+          </>
+        ) : inputDevicesLoading ? (
+          <Alert severity="info">Detecting microphones...</Alert>
+        ) : inputDevices.length === 0 ? (
+          <>
+            <Alert severity="warning" style={{ marginBottom: "1rem" }}>
+              No microphone found. Please connect one and try again.
+            </Alert>
+            <Button
+              variant="contained"
+              color="warning"
+              size="small"
+              onClick={loadInputDevices}
+            >
+              Retry
+            </Button>
+          </>
+        ) : (
+          <FormControl fullWidth size="small">
+            <InputLabel id="mic-selector-label">Select Microphone</InputLabel>
+            <Select
+              labelId="mic-selector-label"
+              aria-label="Select a microphone input"
+              inputProps={{ "aria-label": "Microphone device selector" }}
+              id="mic-selector"
+              value={selectedDeviceId || ""}
+              onChange={(e) => {
+                const newId = e.target.value;
+                if (isRecording) stopRecording();
+                setSelectedDeviceId(newId);
+                localStorage.setItem("selectedMicDeviceId", newId);
+              }}
+              label="Select Microphone"
+              input={
+                <OutlinedInput
+                  label="Select Microphone"
+                  startAdornment={
+                    <InputAdornment position="start">
+                      <MicIcon fontSize="small" />
+                    </InputAdornment>
+                  }
+                />
+              }
+            >
+              {inputDevices.map((device) => (
+                <MenuItem key={device.deviceId} value={device.deviceId}>
+                  {device.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button variant="contained" onClick={closeMicModal} autoFocus>
+          Done
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+
+  // ─── Shared: Hidden measurement div ─────────────────────────────────────
+  const HiddenMeasurer = (
+    <div
+      ref={measureRef}
+      className={story.lang !== "EN" ? "font-devanagari" : undefined}
+      style={{
+        position: "absolute",
+        visibility: "hidden",
+        zIndex: -1,
+        height: "auto",
+        width: "100%",
+        pointerEvents: "none",
+        whiteSpace: "pre-wrap",
+        wordWrap: "break-word",
+      }}
+    />
+  );
+
+  // ─── Shared: Record / Stop / Finish buttons ──────────────────────────────
+  const RecordButton = !isRecording ? (
+    <Button
+      variant="contained"
+      onClick={startRecording}
+      disabled={initializing || stopping || isRecording || audioBlob}
+      sx={{
+        backgroundColor: "#007bff",
+        borderRadius: "30px",
+        textTransform: "none",
+        fontWeight: "600",
+        color: "#fff",
+        boxShadow: "0 4px 10px rgba(0, 119, 255, 0.3)",
+        transition: "all 0.2s ease-in-out",
+        "&:hover": {
+          backgroundColor: "#0066dd",
+          boxShadow: "0 6px 14px rgba(0, 102, 221, 0.35)",
+          transform: "scale(1.03)",
+        },
+      }}
+    >
+      {initializing ? (
+        <CircularProgress size={20} sx={{ color: "#fff", display: "block" }} />
+      ) : (
+        "Start"
+      )}
+    </Button>
+  ) : (
+    <Button
+      variant="contained"
+      onClick={stopRecording}
+      sx={{
+        backgroundColor: "#ef5350",
+        borderRadius: "30px",
+        textTransform: "none",
+        fontWeight: "600",
+        color: "#fff",
+        boxShadow: "0 4px 10px rgba(239, 83, 80, 0.3)",
+        transition: "all 0.2s ease-in-out",
+        "&:hover": {
+          backgroundColor: "#d32f2f",
+          boxShadow: "0 6px 14px rgba(211, 47, 47, 0.35)",
+          transform: "scale(1.03)",
+        },
+      }}
+    >
+      Stop
+    </Button>
+  );
+
+  const FinishButton = audioBlob && !isRecording && (
+    <Button
+      variant="contained"
+      onClick={() => setSubmitted(true)}
+      sx={{
+        backgroundColor: "#4caf50",
+        borderRadius: "30px",
+        textTransform: "none",
+        fontWeight: "600",
+        boxShadow: "0 4px 12px rgba(76,175,80,0.3)",
+        "&:hover": { backgroundColor: "#43a047" },
+      }}
+    >
+      Finish
+    </Button>
+  );
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // MOBILE VIEW
+  // ════════════════════════════════════════════════════════════════════════════
+  if (isMobile) {
+    // Mobile — Review / Submission screen
+    if (submitted) {
+      return (
+        <div className="sr-mobile-review-root">
+          <div className="sr-mobile-review-card">
+            {!sending ? (
+              <>
+                <h2 style={{ marginBottom: 24 }}>Recorded Audio</h2>
+                {audioURL && (
+                  <audio
+                    controls
+                    src={audioURL}
+                    className="sr-mobile-review-audio"
+                  />
+                )}
+                <div className="sr-mobile-review-btn-row">
+                  <Button
+                    variant="contained"
+                    sx={{
+                      backgroundColor: "#ef5350",
+                      borderRadius: "30px",
+                      textTransform: "none",
+                    }}
+                    onClick={() => {
+                      setAudioBlob(null);
+                      setAudioURL(null);
+                      setSubmitted(false);
+                    }}
+                  >
+                    Retry
+                  </Button>
+                  <Button
+                    variant="contained"
+                    sx={{
+                      backgroundColor: "#1976d2",
+                      borderRadius: "30px",
+                      textTransform: "none",
+                    }}
+                    onClick={handleFinalSubmit}
+                  >
+                    Submit Attempt
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <Alert
+                  severity="success"
+                  sx={{
+                    mb: 3,
+                    textAlign: "center",
+                    justifyContent: "center",
+                    maxWidth: "300px",
+                    margin: "0 auto 20px",
+                  }}
+                >
+                  Recording uploaded successfully!
+                </Alert>
+                <p>You have completed</p>
+                <strong>{story.title}</strong>
+                <p style={{ marginTop: 16 }}>What would you like to do next?</p>
+                <div className="sr-mobile-review-btn-row">
+                  <Button
+                    variant="contained"
+                    sx={{
+                      backgroundColor: "#4caf50",
+                      borderRadius: "30px",
+                      textTransform: "none",
+                    }}
+                    onClick={() => {
+                      setAudioBlob(null);
+                      setAudioURL(null);
+                      setSubmitted(false);
+                      setSending(false);
+                    }}
+                  >
+                    Record Again
+                  </Button>
+                  <Button
+                    variant="contained"
+                    sx={{
+                      backgroundColor: "#1976d2",
+                      borderRadius: "30px",
+                      textTransform: "none",
+                    }}
+                    onClick={() => closeWebView()}
+                  >
+                    Back to Chat
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Mobile — Recording screen (horizontal layout)
+    return (
+      <>
+        <div className="sr-mobile-root">
+          <div className="sr-mobile-card">
+            {MicModal}
+
+            {/* Header */}
+            <div className="sr-mobile-header">
+              <span className="sr-mobile-header-meta">
+                Class: {story.grade} |{" "}
+                {story.lang === "EN" ? "English" : "Hindi"}
+              </span>
+              <span className="sr-mobile-header-title">
+                {story.title || "Untitled Story"}
+              </span>
+              <div className="sr-mobile-header-actions">
+                <IconButton
+                  aria-label="Open microphone settings"
+                  size="small"
+                  color="info"
+                  onClick={() => setMicModalOpen(true)}
+                  title="Microphone Settings"
+                  sx={{ padding: "0 4px" }}
+                >
+                  <SettingsIcon fontSize="small" />
+                </IconButton>
+              </div>
+            </div>
+
+            {/* Body: Story text (left) | Controls (right) */}
+            <div className="sr-mobile-body">
+              {/* Story Box */}
+              <div
+                ref={storyContainerRef}
+                className={`sr-mobile-story-box${story.lang !== "EN" ? " font-devanagari" : ""}`}
+              >
+                {showText && (
+                  <p
+                    className="sr-mobile-story-text"
+                    style={{ fontSize: dynamicFontSize }}
+                  >
+                    {story.text || "Your story paragraph here"}
+                  </p>
+                )}
+              </div>
+
+              {/* Controls Panel */}
+              <div className="sr-mobile-controls">
+                {/* Timer */}
+                <span
+                  className="sr-mobile-timer"
+                  aria-live="polite"
+                  aria-atomic="true"
+                >
+                  {formatTime(timer)}
+                </span>
+
+                {/* Waveform */}
+                <canvas
+                  ref={canvasRef}
+                  width={110}
+                  height={36}
+                  className="sr-mobile-canvas"
+                  aria-hidden="true"
+                />
+
+                {/* Start / Stop / Finish */}
+                <div className="sr-mobile-btn-row">
+                  {RecordButton}
+                  {FinishButton}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {HiddenMeasurer}
+      </>
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // DESKTOP VIEW  (original layout — unchanged)
+  // ════════════════════════════════════════════════════════════════════════════
   return (
     <>
       {!submitted ? (
@@ -609,117 +989,9 @@ const StoryRecorder = ({ details = {} }) => {
               gap: "20px",
             }}
           >
-            {/* Mic Modal */}
-            <Dialog
-              open={micModalOpen}
-              onClose={closeMicModal}
-              aria-labelledby="mic-dialog-title"
-              role="dialog"
-              maxWidth="sm"
-              fullWidth
-            >
-              <DialogTitle id="mic-dialog-title">
-                <b>Microphone Settings</b>
-                <IconButton
-                  aria-label="Close Dialog"
-                  title="Close Dialog"
-                  onClick={closeMicModal}
-                  sx={{
-                    position: "absolute",
-                    right: 8,
-                    top: 8,
-                  }}
-                >
-                  <CloseIcon />
-                </IconButton>
-              </DialogTitle>
-              <DialogContent dividers aria-describedby="mic-dialog-description">
-                {!recorderSupported ? (
-                  <Alert severity="error">
-                    Your browser does not support audio recording.
-                  </Alert>
-                ) : !permissionGranted ? (
-                  <>
-                    <Alert severity="error" style={{ marginBottom: "1rem" }}>
-                      Please grant microphone access to use this feature.
-                    </Alert>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={requestMicPermission}
-                    >
-                      Enable Microphone
-                    </Button>
-                  </>
-                ) : inputDevicesLoading ? (
-                  <Alert severity="info">Detecting microphones...</Alert>
-                ) : inputDevices.length === 0 ? (
-                  <>
-                    <Alert severity="warning" style={{ marginBottom: "1rem" }}>
-                      No microphone found. Please connect one and try again.
-                    </Alert>
-                    <Button
-                      variant="contained"
-                      color="warning"
-                      size="small"
-                      onClick={loadInputDevices}
-                    >
-                      Retry
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <FormControl fullWidth size="small">
-                      <InputLabel id="mic-selector-label">
-                        Select Microphone
-                      </InputLabel>
-                      <Select
-                        labelId="mic-selector-label"
-                        aria-label="Select a microphone input"
-                        inputProps={{
-                          "aria-label": "Microphone device selector",
-                        }}
-                        id="mic-selector"
-                        value={selectedDeviceId || ""}
-                        onChange={(e) => {
-                          const newId = e.target.value;
-                          if (isRecording) stopRecording(); // Stop recording if currently recording
-                          setSelectedDeviceId(newId);
-                          localStorage.setItem("selectedMicDeviceId", newId); // persist on selection change
-                        }}
-                        label="Select Microphone"
-                        input={
-                          <OutlinedInput
-                            label="Select Microphone"
-                            startAdornment={
-                              <InputAdornment position="start">
-                                <MicIcon fontSize="small" />
-                              </InputAdornment>
-                            }
-                          />
-                        }
-                      >
-                        {inputDevices.map((device) => (
-                          <MenuItem
-                            key={device.deviceId}
-                            value={device.deviceId}
-                          >
-                            {device.label}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </>
-                )}
-              </DialogContent>
-              <DialogActions>
-                <Button variant="contained" onClick={closeMicModal} autoFocus>
-                  Done
-                </Button>
-              </DialogActions>
-            </Dialog>
+            {MicModal}
 
-            {/* Top Info Row: Count | Title | Mic Info */}
+            {/* Top Info Row: Details | Title | Mic Settings */}
             <div
               style={{
                 display: "flex",
@@ -732,7 +1004,6 @@ const StoryRecorder = ({ details = {} }) => {
                 gap: 12,
               }}
             >
-              {/* Story title */}
               <div
                 style={{
                   fontWeight: "bold",
@@ -856,64 +1127,9 @@ const StoryRecorder = ({ details = {} }) => {
                 />
               </div>
 
-              {/* Center: Start/Stop and Next/Submit */}
+              {/* Center: Start/Stop and Finish */}
               <div style={{ flex: 1, textAlign: "center" }}>
-                {!isRecording ? (
-                  <Button
-                    variant="contained"
-                    onClick={startRecording}
-                    disabled={
-                      initializing || stopping || isRecording || audioBlob
-                    }
-                    sx={{
-                      backgroundColor: "#007bff",
-                      borderRadius: "30px",
-                      textTransform: "none",
-                      fontWeight: "600",
-                      color: "#fff",
-                      boxShadow: "0 4px 10px rgba(0, 119, 255, 0.3)",
-                      transition: "all 0.2s ease-in-out",
-                      "&:hover": {
-                        backgroundColor: "#0066dd",
-                        boxShadow: "0 6px 14px rgba(0, 102, 221, 0.35)",
-                        transform: "scale(1.03)",
-                      },
-                    }}
-                  >
-                    {initializing ? (
-                      <CircularProgress
-                        size={20}
-                        sx={{ color: "#fff", display: "block" }}
-                      />
-                    ) : (
-                      "Start"
-                    )}
-                    {/* <CircularProgress size={20} sx={{ color: '#fff' }} />  */}
-                  </Button>
-                ) : (
-                  <Button
-                    variant="contained"
-                    // color="error"
-                    onClick={stopRecording}
-                    sx={{
-                      backgroundColor: "#ef5350", // red base for stop
-                      borderRadius: "30px",
-                      textTransform: "none",
-                      fontWeight: "600",
-                      color: "#fff",
-                      boxShadow: "0 4px 10px rgba(239, 83, 80, 0.3)",
-                      transition: "all 0.2s ease-in-out",
-                      "&:hover": {
-                        backgroundColor: "#d32f2f", // darker red on hover
-                        boxShadow: "0 6px 14px rgba(211, 47, 47, 0.35)",
-                        transform: "scale(1.03)",
-                      },
-                    }}
-                  >
-                    Stop
-                  </Button>
-                )}
-
+                {RecordButton}
                 {audioBlob && !isRecording && (
                   <Button
                     variant="contained"
@@ -925,9 +1141,7 @@ const StoryRecorder = ({ details = {} }) => {
                       textTransform: "none",
                       fontWeight: "600",
                       boxShadow: "0 4px 12px rgba(76,175,80,0.3)",
-                      "&:hover": {
-                        backgroundColor: "#43a047",
-                      },
+                      "&:hover": { backgroundColor: "#43a047" },
                     }}
                   >
                     Finish
@@ -935,63 +1149,12 @@ const StoryRecorder = ({ details = {} }) => {
                 )}
               </div>
 
-              {/* RIGHT (empty for now if single recording) */}
+              {/* Right: spacer */}
               <div style={{ flex: 1 }} />
-
-              {/* Right: Delete */}
-              {/* <div
-              style={{
-                flex: 1,
-                textAlign: "right",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "flex-end",
-                gap: "0.5rem",
-              }}
-            >
-              <IconButton
-                onClick={handleDelete}
-                disabled={!recordings[currentParaIndex] || uploaded}
-                color="error"
-                aria-label={`Delete recording for paragraph ${currentParaIndex + 1}`}
-                title="Delete this recording"
-              >
-                <DeleteIcon />
-              </IconButton>
-              
-              // Paragraph count 
-              <div
-                style={{ fontSize: 14, color: "#666", fontWeight: "bold" }}
-                aria-live="polite"
-              >
-                Paragraph {currentParaIndex + 1} / {paragraphs.length}
-                <LinearProgress
-                  variant="determinate"
-                  value={((currentParaIndex + 1) / paragraphs.length) * 100}
-                  aria-label="Recording progress"
-                  aria-valuenow={currentParaIndex + 1}
-                  aria-valuemin={1}
-                  aria-valuemax={paragraphs.length}
-                />
-              </div>
-            </div> */}
             </div>
           </div>
-          {/* Hidden measurer */}
-          <div
-            ref={measureRef}
-            className={story.lang !== "EN" ? "font-devanagari" : undefined}
-            style={{
-              position: "absolute",
-              visibility: "hidden",
-              zIndex: -1,
-              height: "auto",
-              width: "100%",
-              pointerEvents: "none",
-              whiteSpace: "pre-wrap",
-              wordWrap: "break-word",
-            }}
-          />
+
+          {HiddenMeasurer}
         </div>
       ) : (
         <div
@@ -1021,13 +1184,11 @@ const StoryRecorder = ({ details = {} }) => {
                 <h2 style={{ textAlign: "center", marginBottom: "40px" }}>
                   Recorded Audio
                 </h2>
-
                 <div style={{ textAlign: "center" }}>
                   {audioURL && (
                     <audio controls src={audioURL} style={{ width: "100%" }} />
                   )}
                 </div>
-
                 <div
                   style={{
                     display: "flex",
@@ -1051,7 +1212,6 @@ const StoryRecorder = ({ details = {} }) => {
                   >
                     Retry
                   </Button>
-
                   <Button
                     variant="contained"
                     sx={{
@@ -1079,12 +1239,9 @@ const StoryRecorder = ({ details = {} }) => {
                 >
                   Recording uploaded successfully!
                 </Alert>
-
                 <p>You have completed</p>
                 <strong>{story.title}</strong>
-
                 <p style={{ marginTop: 20 }}>What would you like to do next?</p>
-
                 <div
                   style={{
                     display: "flex",
@@ -1110,7 +1267,6 @@ const StoryRecorder = ({ details = {} }) => {
                   >
                     Record Again
                   </Button>
-
                   <Button
                     variant="contained"
                     sx={{
@@ -1118,9 +1274,7 @@ const StoryRecorder = ({ details = {} }) => {
                       borderRadius: "30px",
                       textTransform: "none",
                     }}
-                    onClick={() => {
-                      closeWebView();
-                    }}
+                    onClick={() => closeWebView()}
                   >
                     Back to Chat
                   </Button>
