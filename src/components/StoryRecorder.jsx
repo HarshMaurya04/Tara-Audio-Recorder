@@ -23,9 +23,12 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import CloseIcon from "@mui/icons-material/Close";
 import "../styles/StoryRecorder.mobile.css";
 
+// Default audio recording configuration
 const defaultMimeType = "audio/webm";
 const defaultBitrate = 64000;
 const maxRecordingTime = 60;
+
+// Text auto-fit limits
 const minFontSize = 18;
 const maxFontSize = 30;
 
@@ -42,6 +45,7 @@ const isFullscreen = () =>
   document.mozFullScreenElement ||
   document.msFullscreenElement;
 
+// ─── Detect mobile (≤ 768px) ────────────────────────────────────────────────
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(
     () => window.matchMedia("(max-width: 768px)").matches,
@@ -55,92 +59,14 @@ const useIsMobile = () => {
   return isMobile;
 };
 
-// ─── Custom dropdown that stays INSIDE the rotated dialog (no MUI portal escape) ─
-const MicSelectorInline = ({ devices, selectedId, onChange, disabled }) => {
-  const [open, setOpen] = useState(false);
-  const wrapperRef = useRef(null);
-
-  const selectedLabel =
-    devices.find((d) => d.deviceId === selectedId)?.label ||
-    "Select Microphone";
-
-  // Close on outside click
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    document.addEventListener("touchstart", handler);
-    return () => {
-      document.removeEventListener("mousedown", handler);
-      document.removeEventListener("touchstart", handler);
-    };
-  }, [open]);
-
-  return (
-    <div className="sr-mic-selector-wrapper" ref={wrapperRef}>
-      <span className="sr-mic-selector-label">Select Microphone</span>
-      <button
-        className="sr-mic-selector-trigger"
-        onClick={() => !disabled && setOpen((p) => !p)}
-        type="button"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        disabled={disabled}
-      >
-        <span className="sr-mic-selector-trigger-left">
-          {/* Mic icon */}
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="#555"
-            style={{ flexShrink: 0 }}
-          >
-            <path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z" />
-          </svg>
-          <span className="sr-mic-selector-trigger-label">{selectedLabel}</span>
-        </span>
-        <span className={`sr-mic-selector-arrow${open ? " open" : ""}`} />
-      </button>
-
-      {open && (
-        <ul className="sr-mic-selector-dropdown" role="listbox">
-          {devices.map((device) => (
-            <li
-              key={device.deviceId}
-              role="option"
-              aria-selected={device.deviceId === selectedId}
-              className={`sr-mic-selector-option${device.deviceId === selectedId ? " selected" : ""}`}
-              onMouseDown={(e) => {
-                e.preventDefault(); // prevent blur before click registers
-                onChange(device.deviceId);
-                setOpen(false);
-              }}
-              onTouchEnd={(e) => {
-                e.preventDefault();
-                onChange(device.deviceId);
-                setOpen(false);
-              }}
-            >
-              {device.label}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-};
-
-// ─── Mobile mic dialog portal ────────────────────────────────────────────────
+// ─── Mobile mic dialog rendered via portal so it rotates with the layout ────
 const MobileMicDialog = ({ open, onClose, children }) => {
   if (!open) return null;
   return createPortal(
     <>
+      {/* Backdrop */}
       <div className="sr-mobile-dialog-backdrop" onClick={onClose} />
+      {/* Rotated portal wrapper */}
       <div className="sr-mobile-dialog-portal">
         <div className="sr-mobile-dialog-inner">
           <div className="sr-mobile-dialog-box">{children}</div>
@@ -226,14 +152,13 @@ const StoryRecorder = ({ details = {} }) => {
     const measurer = measureRef.current;
     const containerStyles = window.getComputedStyle(container);
 
-    const availableWidth =
-      container.clientWidth -
-      parseFloat(containerStyles.paddingLeft) -
-      parseFloat(containerStyles.paddingRight);
-    const availableHeight =
-      container.clientHeight -
-      parseFloat(containerStyles.paddingTop) -
-      parseFloat(containerStyles.paddingBottom);
+    const paddingTop = parseFloat(containerStyles.paddingTop);
+    const paddingBottom = parseFloat(containerStyles.paddingBottom);
+    const paddingLeft = parseFloat(containerStyles.paddingLeft);
+    const paddingRight = parseFloat(containerStyles.paddingRight);
+
+    const availableWidth = container.clientWidth - paddingLeft - paddingRight;
+    const availableHeight = container.clientHeight - paddingTop - paddingBottom;
 
     measurer.style.position = "absolute";
     measurer.style.visibility = "hidden";
@@ -245,17 +170,21 @@ const StoryRecorder = ({ details = {} }) => {
     measurer.style.border = "none";
     measurer.textContent = story.text;
 
-    let min = minFontSize,
-      max = maxFontSize,
-      best = minFontSize;
+    let min = minFontSize;
+    let max = maxFontSize;
+    let best = minFontSize;
+
     while (min <= max) {
       const mid = Math.floor((min + max) / 2);
       measurer.style.fontSize = `${mid}px`;
       if (measurer.scrollHeight <= availableHeight) {
         best = mid;
         min = mid + 1;
-      } else max = mid - 1;
+      } else {
+        max = mid - 1;
+      }
     }
+
     setDynamicFontSize(best);
   }, [story]);
 
@@ -275,7 +204,7 @@ const StoryRecorder = ({ details = {} }) => {
 
   const cleanupRecording = () => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
     if (audioContextRef.current) {
@@ -306,47 +235,49 @@ const StoryRecorder = ({ details = {} }) => {
     const filtered = audioInputs.filter((device) => {
       const label = device.label?.trim();
       if (!label) return false;
-      const ll = label.toLowerCase();
+      const lowerLabel = label.toLowerCase();
       return !(
-        ll.includes("virtual") ||
-        ll.includes("stereo mix") ||
-        ll.includes("default") ||
-        ll.includes("communications device") ||
-        ll.includes("communications")
+        lowerLabel.includes("virtual") ||
+        lowerLabel.includes("stereo mix") ||
+        lowerLabel.includes("default") ||
+        lowerLabel.includes("communications device") ||
+        lowerLabel.includes("communications")
       );
     });
     const uniqueDevices = [];
-    filtered.forEach((d) => {
-      if (!uniqueDevices.some((u) => u.label === d.label))
-        uniqueDevices.push(d);
+    filtered.forEach((device) => {
+      if (!uniqueDevices.some((d) => d.label === device.label))
+        uniqueDevices.push(device);
     });
     uniqueDevices.sort((a, b) => a.label.localeCompare(b.label));
     setInputDevices(uniqueDevices);
     setInputDevicesLoading(false);
 
-    const savedId = localStorage.getItem("selectedMicDeviceId");
-    const found = uniqueDevices.find((d) => d.deviceId === savedId);
+    const savedDeviceId = localStorage.getItem("selectedMicDeviceId");
+    const foundDevice = uniqueDevices.find((d) => d.deviceId === savedDeviceId);
 
-    if (savedId && found) {
-      setSelectedDeviceId((p) => (p !== savedId ? savedId : p));
-    } else if (savedId && !found) {
+    if (savedDeviceId && foundDevice) {
+      setSelectedDeviceId((prev) =>
+        prev !== savedDeviceId ? savedDeviceId : prev,
+      );
+    } else if (savedDeviceId && !foundDevice) {
       localStorage.removeItem("selectedMicDeviceId");
       alert(
         "Previously selected microphone is no longer available. Switching to the default microphone.",
       );
-      const fb = uniqueDevices[0]?.deviceId;
-      if (fb) setSelectedDeviceId(fb);
-    } else if (!savedId && uniqueDevices.length > 0) {
-      setSelectedDeviceId((p) => {
-        const still = uniqueDevices.some((d) => d.deviceId === p);
-        if (!still) {
-          if (p !== null)
+      const fallbackId = uniqueDevices[0]?.deviceId;
+      if (fallbackId) setSelectedDeviceId(fallbackId);
+    } else if (!savedDeviceId && uniqueDevices.length > 0) {
+      setSelectedDeviceId((prev) => {
+        const stillValid = uniqueDevices.some((d) => d.deviceId === prev);
+        if (!stillValid) {
+          if (prev !== null)
             alert(
               "Selected microphone is no longer available. Switching to a default microphone.",
             );
           return uniqueDevices[0]?.deviceId || null;
         }
-        return p;
+        return prev;
       });
     }
     return uniqueDevices.length > 0;
@@ -362,10 +293,10 @@ const StoryRecorder = ({ details = {} }) => {
       return;
     }
     try {
-      const s = await navigator.mediaDevices.getUserMedia({ audio: true });
-      s.getTracks().forEach((t) => t.stop());
-      const has = await loadInputDevices();
-      setPermissionGranted(has);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((track) => track.stop());
+      const hasDevices = await loadInputDevices();
+      setPermissionGranted(hasDevices);
     } catch {
       setPermissionGranted(false);
     }
@@ -380,26 +311,30 @@ const StoryRecorder = ({ details = {} }) => {
     navigator.mediaDevices
       .getUserMedia({ audio: true })
       .then(async (stream) => {
-        stream.getTracks().forEach((t) => t.stop());
-        const has = await loadInputDevices();
-        setPermissionGranted(has);
+        stream.getTracks().forEach((track) => track.stop());
+        const hasDevices = await loadInputDevices();
+        setPermissionGranted(hasDevices);
       })
       .catch((e) => {
+        console.log("mic permission error: ", e);
         setPermissionGranted(false);
-        if (e.name === "NotAllowedError" || e.name === "SecurityError")
+        if (e.name === "NotAllowedError" || e.name === "SecurityError") {
           alert(
             "Microphone access was denied. Please allow microphone permission in your browser settings.",
           );
-        else alert("An error occurred while requesting microphone access.");
+        } else {
+          alert("An error occurred while requesting microphone access.");
+        }
       });
   }, [loadInputDevices]);
 
   const drawWaveform = () => {
-    const canvas = canvasRef.current,
-      ctx = canvas?.getContext("2d"),
-      analyser = analyserRef.current,
-      dataArray = dataArrayRef.current;
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    const analyser = analyserRef.current;
+    const dataArray = dataArrayRef.current;
     if (!canvas || !ctx || !analyser || !dataArray) return;
+
     const bufferLength = analyser.fftSize;
     const draw = () => {
       if (!analyserRef.current || !dataArrayRef.current || !canvasRef.current)
@@ -414,8 +349,8 @@ const StoryRecorder = ({ details = {} }) => {
       const sliceWidth = canvas.width / bufferLength;
       let x = 0;
       for (let i = 0; i < bufferLength; i++) {
-        const v = dataArray[i] / 128.0,
-          y = (v * canvas.height) / 2;
+        const v = dataArray[i] / 128.0;
+        const y = (v * canvas.height) / 2;
         i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
         x += sliceWidth;
       }
@@ -431,11 +366,13 @@ const StoryRecorder = ({ details = {} }) => {
       return;
     }
     if (isRecording || initializing) return;
+
     setAudioBlob(null);
     setAudioURL(null);
     setInitializing(true);
     setShowText(true);
     setTimer(0);
+
     try {
       const options = {
         mimeType: defaultMimeType,
@@ -454,6 +391,7 @@ const StoryRecorder = ({ details = {} }) => {
       setIsRecording(true);
       streamRef.current = stream;
       audioChunksRef.current = [];
+
       audioContextRef.current = new (
         window.AudioContext || window.webkitAudioContext
       )();
@@ -463,8 +401,10 @@ const StoryRecorder = ({ details = {} }) => {
       dataArrayRef.current = new Uint8Array(analyserRef.current.fftSize);
       source.connect(analyserRef.current);
       drawWaveform();
+
       const mediaRecorder = new MediaRecorder(stream, options);
       mediaRecorderRef.current = mediaRecorder;
+
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
@@ -509,34 +449,38 @@ const StoryRecorder = ({ details = {} }) => {
 
   useEffect(() => {
     if (!navigator.mediaDevices?.addEventListener) return;
-    const handler = async () => await loadInputDevices();
-    navigator.mediaDevices.addEventListener("devicechange", handler);
+    const handleDeviceChange = async () => await loadInputDevices();
+    navigator.mediaDevices.addEventListener("devicechange", handleDeviceChange);
     return () =>
-      navigator.mediaDevices.removeEventListener("devicechange", handler);
+      navigator.mediaDevices.removeEventListener(
+        "devicechange",
+        handleDeviceChange,
+      );
   }, [loadInputDevices]);
 
   useEffect(() => {
     if (!isRecording) return;
-    const id = setInterval(() => {
-      setTimer((p) => {
-        const n = p + 1;
-        if (n > maxRecordingTime) {
+    const intervalId = setInterval(() => {
+      setTimer((prev) => {
+        const next = prev + 1;
+        if (next > maxRecordingTime) {
           stopRecording();
-          return p;
+          return prev;
         }
-        return n;
+        return next;
       });
     }, 1000);
-    return () => clearInterval(id);
+    return () => clearInterval(intervalId);
   }, [isRecording, stopRecording]);
 
   useEffect(() => {
     if (!isRecording) return;
-    const onVis = () => {
+    const handleVisibilityChange = () => {
       if (document.hidden) stopRecording();
     };
-    document.addEventListener("visibilitychange", onVis);
-    return () => document.removeEventListener("visibilitychange", onVis);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [isRecording, stopRecording]);
 
   useEffect(() => {
@@ -550,13 +494,17 @@ const StoryRecorder = ({ details = {} }) => {
     }
     setSending(true);
     try {
-      if (sender) uploadAudioToBackend(audioBlob, sender, story);
-      else console.warn("Sender not found in payload");
+      if (sender) {
+        uploadAudioToBackend(audioBlob, sender, story);
+      } else {
+        console.warn("Sender not found in payload");
+      }
     } catch (err) {
       console.error("Upload error:", err);
     }
   };
 
+  // ─── Loading ─────────────────────────────────────────────────────────────
   if (!story) {
     return (
       <div style={{ textAlign: "center", marginTop: 100 }}>
@@ -566,7 +514,81 @@ const StoryRecorder = ({ details = {} }) => {
     );
   }
 
-  // ─── Shared: Hidden measurer ──────────────────────────────────────────────
+  // ─── Mic dialog content (shared between mobile custom dialog & desktop MUI dialog) ──
+  const MicDialogContent = (
+    <>
+      {!recorderSupported ? (
+        <Alert severity="error">
+          Your browser does not support audio recording.
+        </Alert>
+      ) : !permissionGranted ? (
+        <>
+          <Alert severity="error" style={{ marginBottom: "1rem" }}>
+            Please grant microphone access to use this feature.
+          </Alert>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={requestMicPermission}
+          >
+            Enable Microphone
+          </Button>
+        </>
+      ) : inputDevicesLoading ? (
+        <Alert severity="info">Detecting microphones...</Alert>
+      ) : inputDevices.length === 0 ? (
+        <>
+          <Alert severity="warning" style={{ marginBottom: "1rem" }}>
+            No microphone found. Please connect one and try again.
+          </Alert>
+          <Button
+            variant="contained"
+            color="warning"
+            size="small"
+            onClick={loadInputDevices}
+          >
+            Retry
+          </Button>
+        </>
+      ) : (
+        <FormControl fullWidth size="small">
+          <InputLabel id="mic-selector-label">Select Microphone</InputLabel>
+          <Select
+            labelId="mic-selector-label"
+            aria-label="Select a microphone input"
+            inputProps={{ "aria-label": "Microphone device selector" }}
+            id="mic-selector"
+            value={selectedDeviceId || ""}
+            onChange={(e) => {
+              const newId = e.target.value;
+              if (isRecording) stopRecording();
+              setSelectedDeviceId(newId);
+              localStorage.setItem("selectedMicDeviceId", newId);
+            }}
+            label="Select Microphone"
+            input={
+              <OutlinedInput
+                label="Select Microphone"
+                startAdornment={
+                  <InputAdornment position="start">
+                    <MicIcon fontSize="small" />
+                  </InputAdornment>
+                }
+              />
+            }
+          >
+            {inputDevices.map((device) => (
+              <MenuItem key={device.deviceId} value={device.deviceId}>
+                {device.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      )}
+    </>
+  );
+
+  // ─── Shared: Hidden measurer div ─────────────────────────────────────────
   const HiddenMeasurer = (
     <div
       ref={measureRef}
@@ -584,7 +606,7 @@ const StoryRecorder = ({ details = {} }) => {
     />
   );
 
-  // ─── Shared: Record/Stop button ───────────────────────────────────────────
+  // ─── Shared: Start / Stop button ─────────────────────────────────────────
   const RecordButton = !isRecording ? (
     <Button
       variant="contained"
@@ -596,9 +618,13 @@ const StoryRecorder = ({ details = {} }) => {
         textTransform: "none",
         fontWeight: "600",
         color: "#fff",
-        boxShadow: "0 4px 10px rgba(0,119,255,0.3)",
+        boxShadow: "0 4px 10px rgba(0, 119, 255, 0.3)",
         transition: "all 0.2s ease-in-out",
-        "&:hover": { backgroundColor: "#0066dd", transform: "scale(1.03)" },
+        "&:hover": {
+          backgroundColor: "#0066dd",
+          boxShadow: "0 6px 14px rgba(0, 102, 221, 0.35)",
+          transform: "scale(1.03)",
+        },
       }}
     >
       {initializing ? (
@@ -617,8 +643,13 @@ const StoryRecorder = ({ details = {} }) => {
         textTransform: "none",
         fontWeight: "600",
         color: "#fff",
-        boxShadow: "0 4px 10px rgba(239,83,80,0.3)",
-        "&:hover": { backgroundColor: "#d32f2f" },
+        boxShadow: "0 4px 10px rgba(239, 83, 80, 0.3)",
+        transition: "all 0.2s ease-in-out",
+        "&:hover": {
+          backgroundColor: "#d32f2f",
+          boxShadow: "0 6px 14px rgba(211, 47, 47, 0.35)",
+          transform: "scale(1.03)",
+        },
       }}
     >
       Stop
@@ -646,59 +677,10 @@ const StoryRecorder = ({ details = {} }) => {
   // MOBILE VIEW
   // ══════════════════════════════════════════════════════════════════════════
   if (isMobile) {
-    // ── Mobile mic dialog content — uses custom inline dropdown (no MUI portal escape) ──
-    const MobileMicContent = (
-      <>
-        {!recorderSupported ? (
-          <Alert severity="error">
-            Your browser does not support audio recording.
-          </Alert>
-        ) : !permissionGranted ? (
-          <>
-            <Alert severity="error" style={{ marginBottom: "1rem" }}>
-              Please grant microphone access to use this feature.
-            </Alert>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={requestMicPermission}
-            >
-              Enable Microphone
-            </Button>
-          </>
-        ) : inputDevicesLoading ? (
-          <Alert severity="info">Detecting microphones...</Alert>
-        ) : inputDevices.length === 0 ? (
-          <>
-            <Alert severity="warning" style={{ marginBottom: "1rem" }}>
-              No microphone found. Please connect one and try again.
-            </Alert>
-            <Button
-              variant="contained"
-              color="warning"
-              size="small"
-              onClick={loadInputDevices}
-            >
-              Retry
-            </Button>
-          </>
-        ) : (
-          /* ── Custom inline dropdown — renders inside rotated dialog, no portal ── */
-          <MicSelectorInline
-            devices={inputDevices}
-            selectedId={selectedDeviceId}
-            onChange={(newId) => {
-              if (isRecording) stopRecording();
-              setSelectedDeviceId(newId);
-              localStorage.setItem("selectedMicDeviceId", newId);
-            }}
-          />
-        )}
-      </>
-    );
-
+    // ── Mobile mic dialog: custom portal-based dialog that rotates with the layout ──
     const MobileMicDialogJSX = (
       <MobileMicDialog open={micModalOpen} onClose={closeMicModal}>
+        {/* Title */}
         <div className="sr-mobile-dialog-title">
           <span>Microphone Settings</span>
           <IconButton
@@ -709,7 +691,9 @@ const StoryRecorder = ({ details = {} }) => {
             <CloseIcon fontSize="small" />
           </IconButton>
         </div>
-        <div className="sr-mobile-dialog-content">{MobileMicContent}</div>
+        {/* Content */}
+        <div className="sr-mobile-dialog-content">{MicDialogContent}</div>
+        {/* Actions */}
         <div className="sr-mobile-dialog-actions">
           <Button variant="contained" onClick={closeMicModal} autoFocus>
             Done
@@ -825,6 +809,7 @@ const StoryRecorder = ({ details = {} }) => {
         <div className="sr-mobile-root">
           <div className="sr-mobile-landscape-wrapper">
             <div className="sr-mobile-card">
+              {/* Header */}
               <div className="sr-mobile-header">
                 <span className="sr-mobile-header-meta">
                   Class: {story.grade} |{" "}
@@ -847,6 +832,7 @@ const StoryRecorder = ({ details = {} }) => {
                 </div>
               </div>
 
+              {/* Body: Story text (left) | Controls (right) */}
               <div className="sr-mobile-body">
                 <div
                   ref={storyContainerRef}
@@ -895,78 +881,7 @@ const StoryRecorder = ({ details = {} }) => {
   // DESKTOP VIEW — original layout, unchanged
   // ══════════════════════════════════════════════════════════════════════════
 
-  // Desktop mic dialog content uses MUI Select (no rotation issue on desktop)
-  const DesktopMicContent = (
-    <>
-      {!recorderSupported ? (
-        <Alert severity="error">
-          Your browser does not support audio recording.
-        </Alert>
-      ) : !permissionGranted ? (
-        <>
-          <Alert severity="error" style={{ marginBottom: "1rem" }}>
-            Please grant microphone access to use this feature.
-          </Alert>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={requestMicPermission}
-          >
-            Enable Microphone
-          </Button>
-        </>
-      ) : inputDevicesLoading ? (
-        <Alert severity="info">Detecting microphones...</Alert>
-      ) : inputDevices.length === 0 ? (
-        <>
-          <Alert severity="warning" style={{ marginBottom: "1rem" }}>
-            No microphone found. Please connect one and try again.
-          </Alert>
-          <Button
-            variant="contained"
-            color="warning"
-            size="small"
-            onClick={loadInputDevices}
-          >
-            Retry
-          </Button>
-        </>
-      ) : (
-        <FormControl fullWidth size="small">
-          <InputLabel id="mic-selector-label">Select Microphone</InputLabel>
-          <Select
-            labelId="mic-selector-label"
-            id="mic-selector"
-            value={selectedDeviceId || ""}
-            onChange={(e) => {
-              const id = e.target.value;
-              if (isRecording) stopRecording();
-              setSelectedDeviceId(id);
-              localStorage.setItem("selectedMicDeviceId", id);
-            }}
-            label="Select Microphone"
-            input={
-              <OutlinedInput
-                label="Select Microphone"
-                startAdornment={
-                  <InputAdornment position="start">
-                    <MicIcon fontSize="small" />
-                  </InputAdornment>
-                }
-              />
-            }
-          >
-            {inputDevices.map((d) => (
-              <MenuItem key={d.deviceId} value={d.deviceId}>
-                {d.label}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      )}
-    </>
-  );
-
+  // Desktop uses the original MUI Dialog
   const DesktopMicModal = (
     <Dialog
       open={micModalOpen}
@@ -987,7 +902,7 @@ const StoryRecorder = ({ details = {} }) => {
           <CloseIcon />
         </IconButton>
       </DialogTitle>
-      <DialogContent dividers>{DesktopMicContent}</DialogContent>
+      <DialogContent dividers>{MicDialogContent}</DialogContent>
       <DialogActions>
         <Button variant="contained" onClick={closeMicModal} autoFocus>
           Done
@@ -1024,6 +939,8 @@ const StoryRecorder = ({ details = {} }) => {
             }}
           >
             {DesktopMicModal}
+
+            {/* Top Info Row */}
             <div
               style={{
                 display: "flex",
@@ -1088,6 +1005,8 @@ const StoryRecorder = ({ details = {} }) => {
                 </div>
               </div>
             </div>
+
+            {/* Story Box */}
             <div
               ref={storyContainerRef}
               className={story.lang !== "EN" ? "font-devanagari" : undefined}
@@ -1119,6 +1038,8 @@ const StoryRecorder = ({ details = {} }) => {
                 </p>
               )}
             </div>
+
+            {/* Control Row */}
             <div
               style={{ display: "flex", alignItems: "center", marginTop: 20 }}
             >
@@ -1149,6 +1070,7 @@ const StoryRecorder = ({ details = {} }) => {
                   aria-hidden="true"
                 />
               </div>
+
               <div style={{ flex: 1, textAlign: "center" }}>
                 {RecordButton}
                 {audioBlob && !isRecording && (
@@ -1169,6 +1091,7 @@ const StoryRecorder = ({ details = {} }) => {
                   </Button>
                 )}
               </div>
+
               <div style={{ flex: 1 }} />
             </div>
           </div>
@@ -1203,9 +1126,11 @@ const StoryRecorder = ({ details = {} }) => {
                 <h2 style={{ textAlign: "center", marginBottom: "40px" }}>
                   Recorded Audio
                 </h2>
-                {audioURL && (
-                  <audio controls src={audioURL} style={{ width: "100%" }} />
-                )}
+                <div style={{ textAlign: "center" }}>
+                  {audioURL && (
+                    <audio controls src={audioURL} style={{ width: "100%" }} />
+                  )}
+                </div>
                 <div
                   style={{
                     display: "flex",
