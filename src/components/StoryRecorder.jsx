@@ -28,7 +28,7 @@ const defaultBitrate = 64000;
 const maxRecordingTime = 60;
 
 // Text auto-fit limits
-const minFontSize = 18;
+const minFontSize = 12;
 const maxFontSize = 30;
 
 const exitFullscreen = () => {
@@ -88,7 +88,7 @@ const StoryRecorder = ({ details = {} }) => {
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
 
-  const [dynamicFontSize, setDynamicFontSize] = useState(32);
+  const [dynamicFontSize, setDynamicFontSize] = useState(20);
 
   const storyContainerRef = useRef(null);
   const measureRef = useRef(null);
@@ -125,6 +125,7 @@ const StoryRecorder = ({ details = {} }) => {
     loadPayload();
   }, []);
 
+  // Automatically adjusts font size so text fits inside story box
   const fitTextToContainer = useCallback(() => {
     if (!storyContainerRef.current || !measureRef.current || !story?.text)
       return;
@@ -185,7 +186,7 @@ const StoryRecorder = ({ details = {} }) => {
 
   const cleanupRecording = () => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
     if (audioContextRef.current) {
@@ -216,49 +217,43 @@ const StoryRecorder = ({ details = {} }) => {
     const filtered = audioInputs.filter((device) => {
       const label = device.label?.trim();
       if (!label) return false;
-      const lowerLabel = label.toLowerCase();
+      const ll = label.toLowerCase();
       return !(
-        lowerLabel.includes("virtual") ||
-        lowerLabel.includes("stereo mix") ||
-        lowerLabel.includes("default") ||
-        lowerLabel.includes("communications device") ||
-        lowerLabel.includes("communications")
+        ll.includes("virtual") ||
+        ll.includes("stereo mix") ||
+        ll.includes("default") ||
+        ll.includes("communications device") ||
+        ll.includes("communications")
       );
     });
     const uniqueDevices = [];
-    filtered.forEach((device) => {
-      if (!uniqueDevices.some((d) => d.label === device.label))
-        uniqueDevices.push(device);
+    filtered.forEach((d) => {
+      if (!uniqueDevices.some((u) => u.label === d.label))
+        uniqueDevices.push(d);
     });
     uniqueDevices.sort((a, b) => a.label.localeCompare(b.label));
     setInputDevices(uniqueDevices);
     setInputDevicesLoading(false);
 
-    const savedDeviceId = localStorage.getItem("selectedMicDeviceId");
-    const foundDevice = uniqueDevices.find((d) => d.deviceId === savedDeviceId);
+    const savedId = localStorage.getItem("selectedMicDeviceId");
+    const found = uniqueDevices.find((d) => d.deviceId === savedId);
 
-    if (savedDeviceId && foundDevice) {
-      setSelectedDeviceId((prev) =>
-        prev !== savedDeviceId ? savedDeviceId : prev,
-      );
-    } else if (savedDeviceId && !foundDevice) {
+    if (savedId && found) {
+      setSelectedDeviceId((p) => (p !== savedId ? savedId : p));
+    } else if (savedId && !found) {
       localStorage.removeItem("selectedMicDeviceId");
-      alert(
-        "Previously selected microphone is no longer available. Switching to the default microphone.",
-      );
-      const fallbackId = uniqueDevices[0]?.deviceId;
-      if (fallbackId) setSelectedDeviceId(fallbackId);
-    } else if (!savedDeviceId && uniqueDevices.length > 0) {
-      setSelectedDeviceId((prev) => {
-        const stillValid = uniqueDevices.some((d) => d.deviceId === prev);
-        if (!stillValid) {
-          if (prev !== null)
-            alert(
-              "Selected microphone is no longer available. Switching to a default microphone.",
-            );
+      alert("Previously selected microphone is no longer available. Switching to the default microphone.");
+      const fb = uniqueDevices[0]?.deviceId;
+      if (fb) setSelectedDeviceId(fb);
+    } else if (!savedId && uniqueDevices.length > 0) {
+      setSelectedDeviceId((p) => {
+        const still = uniqueDevices.some((d) => d.deviceId === p);
+        if (!still) {
+          if (p !== null)
+            alert("Selected microphone is no longer available. Switching to a default microphone.");
           return uniqueDevices[0]?.deviceId || null;
         }
-        return prev;
+        return p;
       });
     }
     return uniqueDevices.length > 0;
@@ -274,10 +269,10 @@ const StoryRecorder = ({ details = {} }) => {
       return;
     }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach((track) => track.stop());
-      const hasDevices = await loadInputDevices();
-      setPermissionGranted(hasDevices);
+      const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+      s.getTracks().forEach((t) => t.stop());
+      const has = await loadInputDevices();
+      setPermissionGranted(has);
     } catch {
       setPermissionGranted(false);
     }
@@ -292,17 +287,14 @@ const StoryRecorder = ({ details = {} }) => {
     navigator.mediaDevices
       .getUserMedia({ audio: true })
       .then(async (stream) => {
-        stream.getTracks().forEach((track) => track.stop());
-        const hasDevices = await loadInputDevices();
-        setPermissionGranted(hasDevices);
+        stream.getTracks().forEach((t) => t.stop());
+        const has = await loadInputDevices();
+        setPermissionGranted(has);
       })
       .catch((e) => {
-        console.log("mic permission error: ", e);
         setPermissionGranted(false);
         if (e.name === "NotAllowedError" || e.name === "SecurityError") {
-          alert(
-            "Microphone access was denied. Please allow microphone permission in your browser settings.",
-          );
+          alert("Microphone access was denied. Please allow microphone permission in your browser settings.");
         } else {
           alert("An error occurred while requesting microphone access.");
         }
@@ -315,11 +307,9 @@ const StoryRecorder = ({ details = {} }) => {
     const analyser = analyserRef.current;
     const dataArray = dataArrayRef.current;
     if (!canvas || !ctx || !analyser || !dataArray) return;
-
     const bufferLength = analyser.fftSize;
     const draw = () => {
-      if (!analyserRef.current || !dataArrayRef.current || !canvasRef.current)
-        return;
+      if (!analyserRef.current || !dataArrayRef.current || !canvasRef.current) return;
       animationRef.current = requestAnimationFrame(draw);
       analyser.getByteTimeDomainData(dataArray);
       ctx.fillStyle = "#f9f9f9";
@@ -342,18 +332,13 @@ const StoryRecorder = ({ details = {} }) => {
   };
 
   const startRecording = async () => {
-    if (!permissionGranted) {
-      setMicModalOpen(true);
-      return;
-    }
+    if (!permissionGranted) { setMicModalOpen(true); return; }
     if (isRecording || initializing) return;
-
     setAudioBlob(null);
     setAudioURL(null);
     setInitializing(true);
     setShowText(true);
     setTimer(0);
-
     try {
       const options = { mimeType: defaultMimeType, audioBitsPerSecond: defaultBitrate };
       if (!MediaRecorder.isTypeSupported(options.mimeType)) {
@@ -362,14 +347,11 @@ const StoryRecorder = ({ details = {} }) => {
         return;
       }
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
-        },
+        audio: { deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined },
       });
       setIsRecording(true);
       streamRef.current = stream;
       audioChunksRef.current = [];
-
       audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
       const source = audioContextRef.current.createMediaStreamSource(stream);
       analyserRef.current = audioContextRef.current.createAnalyser();
@@ -377,10 +359,8 @@ const StoryRecorder = ({ details = {} }) => {
       dataArrayRef.current = new Uint8Array(analyserRef.current.fftSize);
       source.connect(analyserRef.current);
       drawWaveform();
-
       const mediaRecorder = new MediaRecorder(stream, options);
       mediaRecorderRef.current = mediaRecorder;
-
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
@@ -431,27 +411,21 @@ const StoryRecorder = ({ details = {} }) => {
 
   useEffect(() => {
     if (!isRecording) return;
-    const intervalId = setInterval(() => {
-      setTimer((prev) => {
-        const next = prev + 1;
-        if (next > maxRecordingTime) {
-          stopRecording();
-          return prev;
-        }
-        return next;
+    const id = setInterval(() => {
+      setTimer((p) => {
+        const n = p + 1;
+        if (n > maxRecordingTime) { stopRecording(); return p; }
+        return n;
       });
     }, 1000);
-    return () => clearInterval(intervalId);
+    return () => clearInterval(id);
   }, [isRecording, stopRecording]);
 
   useEffect(() => {
     if (!isRecording) return;
-    const handleVisibilityChange = () => {
-      if (document.hidden) stopRecording();
-    };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () =>
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    const onVis = () => { if (document.hidden) stopRecording(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
   }, [isRecording, stopRecording]);
 
   useEffect(() => {
@@ -459,17 +433,11 @@ const StoryRecorder = ({ details = {} }) => {
   }, [audioBlob]);
 
   const handleFinalSubmit = async () => {
-    if (!audioBlob) {
-      alert("No audio recorded");
-      return;
-    }
+    if (!audioBlob) { alert("No audio recorded"); return; }
     setSending(true);
     try {
-      if (sender) {
-        uploadAudioToBackend(audioBlob, sender, story);
-      } else {
-        console.warn("Sender not found in payload");
-      }
+      if (sender) uploadAudioToBackend(audioBlob, sender, story);
+      else console.warn("Sender not found in payload");
     } catch (err) {
       console.error("Upload error:", err);
     }
@@ -508,9 +476,7 @@ const StoryRecorder = ({ details = {} }) => {
       </DialogTitle>
       <DialogContent dividers>
         {!recorderSupported ? (
-          <Alert severity="error">
-            Your browser does not support audio recording.
-          </Alert>
+          <Alert severity="error">Your browser does not support audio recording.</Alert>
         ) : !permissionGranted ? (
           <>
             <Alert severity="error" style={{ marginBottom: "1rem" }}>
@@ -558,9 +524,9 @@ const StoryRecorder = ({ details = {} }) => {
                 />
               }
             >
-              {inputDevices.map((device) => (
-                <MenuItem key={device.deviceId} value={device.deviceId}>
-                  {device.label}
+              {inputDevices.map((d) => (
+                <MenuItem key={d.deviceId} value={d.deviceId}>
+                  {d.label}
                 </MenuItem>
               ))}
             </Select>
@@ -575,7 +541,7 @@ const StoryRecorder = ({ details = {} }) => {
     </Dialog>
   );
 
-  // ─── Shared: Hidden measurer div ─────────────────────────────────────────
+  // ─── Shared: Hidden measurer ─────────────────────────────────────────────
   const HiddenMeasurer = (
     <div
       ref={measureRef}
@@ -593,7 +559,7 @@ const StoryRecorder = ({ details = {} }) => {
     />
   );
 
-  // ─── Shared: Start / Stop button ─────────────────────────────────────────
+  // ─── Shared: Start/Stop button ───────────────────────────────────────────
   const RecordButton = !isRecording ? (
     <Button
       variant="contained"
@@ -605,20 +571,13 @@ const StoryRecorder = ({ details = {} }) => {
         textTransform: "none",
         fontWeight: "600",
         color: "#fff",
-        boxShadow: "0 4px 10px rgba(0, 119, 255, 0.3)",
-        transition: "all 0.2s ease-in-out",
-        "&:hover": {
-          backgroundColor: "#0066dd",
-          boxShadow: "0 6px 14px rgba(0, 102, 221, 0.35)",
-          transform: "scale(1.03)",
-        },
+        boxShadow: "0 4px 10px rgba(0,119,255,0.3)",
+        "&:hover": { backgroundColor: "#0066dd" },
       }}
     >
       {initializing ? (
-        <CircularProgress size={20} sx={{ color: "#fff", display: "block" }} />
-      ) : (
-        "Start"
-      )}
+        <CircularProgress size={18} sx={{ color: "#fff" }} />
+      ) : "Start"}
     </Button>
   ) : (
     <Button
@@ -630,13 +589,8 @@ const StoryRecorder = ({ details = {} }) => {
         textTransform: "none",
         fontWeight: "600",
         color: "#fff",
-        boxShadow: "0 4px 10px rgba(239, 83, 80, 0.3)",
-        transition: "all 0.2s ease-in-out",
-        "&:hover": {
-          backgroundColor: "#d32f2f",
-          boxShadow: "0 6px 14px rgba(211, 47, 47, 0.35)",
-          transform: "scale(1.03)",
-        },
+        boxShadow: "0 4px 10px rgba(239,83,80,0.3)",
+        "&:hover": { backgroundColor: "#d32f2f" },
       }}
     >
       Stop
@@ -652,7 +606,6 @@ const StoryRecorder = ({ details = {} }) => {
         borderRadius: "30px",
         textTransform: "none",
         fontWeight: "600",
-        boxShadow: "0 4px 12px rgba(76,175,80,0.3)",
         "&:hover": { backgroundColor: "#43a047" },
       }}
     >
@@ -661,78 +614,65 @@ const StoryRecorder = ({ details = {} }) => {
   );
 
   // ══════════════════════════════════════════════════════════════════════════
-  // MOBILE VIEW — always horizontal, rotated to landscape if phone is portrait
+  // MOBILE VIEW
+  // Horizontal row layout (story left, controls right) that fits natively
+  // inside a portrait phone screen — NO rotation tricks.
   // ══════════════════════════════════════════════════════════════════════════
   if (isMobile) {
     // Mobile — Review / Submission screen
     if (submitted) {
       return (
         <div className="sr-mobile-review-root">
-          {/* Landscape wrapper: rotates content in portrait mode */}
-          <div className="sr-mobile-review-landscape-wrapper">
-            <div className="sr-mobile-review-card">
-              {!sending ? (
-                <>
-                  <h2 style={{ marginBottom: 20 }}>Recorded Audio</h2>
-                  {audioURL && (
-                    <audio controls src={audioURL} className="sr-mobile-review-audio" />
-                  )}
-                  <div className="sr-mobile-review-btn-row">
-                    <Button
-                      variant="contained"
-                      sx={{ backgroundColor: "#ef5350", borderRadius: "30px", textTransform: "none" }}
-                      onClick={() => {
-                        setAudioBlob(null);
-                        setAudioURL(null);
-                        setSubmitted(false);
-                      }}
-                    >
-                      Retry
-                    </Button>
-                    <Button
-                      variant="contained"
-                      sx={{ backgroundColor: "#1976d2", borderRadius: "30px", textTransform: "none" }}
-                      onClick={handleFinalSubmit}
-                    >
-                      Submit Attempt
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <Alert
-                    severity="success"
-                    sx={{ mb: 2, textAlign: "center", justifyContent: "center" }}
+          <div className="sr-mobile-review-card">
+            {!sending ? (
+              <>
+                <h2 style={{ marginBottom: 18 }}>Recorded Audio</h2>
+                {audioURL && (
+                  <audio controls src={audioURL} className="sr-mobile-review-audio" />
+                )}
+                <div className="sr-mobile-review-btn-row">
+                  <Button
+                    variant="contained"
+                    sx={{ backgroundColor: "#ef5350", borderRadius: "30px", textTransform: "none" }}
+                    onClick={() => { setAudioBlob(null); setAudioURL(null); setSubmitted(false); }}
                   >
-                    Recording uploaded successfully!
-                  </Alert>
-                  <p>You have completed</p>
-                  <strong>{story.title}</strong>
-                  <p style={{ marginTop: 14 }}>What would you like to do next?</p>
-                  <div className="sr-mobile-review-btn-row">
-                    <Button
-                      variant="contained"
-                      sx={{ backgroundColor: "#4caf50", borderRadius: "30px", textTransform: "none" }}
-                      onClick={() => {
-                        setAudioBlob(null);
-                        setAudioURL(null);
-                        setSubmitted(false);
-                        setSending(false);
-                      }}
-                    >
-                      Record Again
-                    </Button>
-                    <Button
-                      variant="contained"
-                      sx={{ backgroundColor: "#1976d2", borderRadius: "30px", textTransform: "none" }}
-                      onClick={() => closeWebView()}
-                    >
-                      Back to Chat
-                    </Button>
-                  </div>
-                </>
-              )}
-            </div>
+                    Retry
+                  </Button>
+                  <Button
+                    variant="contained"
+                    sx={{ backgroundColor: "#1976d2", borderRadius: "30px", textTransform: "none" }}
+                    onClick={handleFinalSubmit}
+                  >
+                    Submit
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <Alert severity="success" sx={{ mb: 2, justifyContent: "center" }}>
+                  Recording uploaded successfully!
+                </Alert>
+                <p>You have completed</p>
+                <strong>{story.title}</strong>
+                <p style={{ marginTop: 12 }}>What would you like to do next?</p>
+                <div className="sr-mobile-review-btn-row">
+                  <Button
+                    variant="contained"
+                    sx={{ backgroundColor: "#4caf50", borderRadius: "30px", textTransform: "none" }}
+                    onClick={() => { setAudioBlob(null); setAudioURL(null); setSubmitted(false); setSending(false); }}
+                  >
+                    Record Again
+                  </Button>
+                  <Button
+                    variant="contained"
+                    sx={{ backgroundColor: "#1976d2", borderRadius: "30px", textTransform: "none" }}
+                    onClick={() => closeWebView()}
+                  >
+                    Back to Chat
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       );
@@ -742,70 +682,67 @@ const StoryRecorder = ({ details = {} }) => {
     return (
       <>
         <div className="sr-mobile-root">
-          {/* Landscape wrapper: rotates content 90deg when phone is in portrait */}
-          <div className="sr-mobile-landscape-wrapper">
-            <div className="sr-mobile-card">
-              {MicModal}
+          <div className="sr-mobile-card">
+            {MicModal}
 
-              {/* Header */}
-              <div className="sr-mobile-header">
-                <span className="sr-mobile-header-meta">
-                  Class: {story.grade} | {story.lang === "EN" ? "English" : "Hindi"}
-                </span>
-                <span className="sr-mobile-header-title">
-                  {story.title || "Untitled Story"}
-                </span>
-                <div className="sr-mobile-header-actions">
-                  <IconButton
-                    aria-label="Open microphone settings"
-                    size="small"
-                    color="info"
-                    onClick={() => setMicModalOpen(true)}
-                    title="Microphone Settings"
-                    sx={{ padding: "0 4px" }}
+            {/* Header */}
+            <div className="sr-mobile-header">
+              <span className="sr-mobile-header-meta">
+                Class: {story.grade} | {story.lang === "EN" ? "English" : "Hindi"}
+              </span>
+              <span className="sr-mobile-header-title">
+                {story.title || "Untitled Story"}
+              </span>
+              <div className="sr-mobile-header-actions">
+                <IconButton
+                  aria-label="Open microphone settings"
+                  size="small"
+                  color="info"
+                  onClick={() => setMicModalOpen(true)}
+                  title="Microphone Settings"
+                  sx={{ padding: "0 4px" }}
+                >
+                  <SettingsIcon fontSize="small" />
+                </IconButton>
+              </div>
+            </div>
+
+            {/* Body: Story (left) | Controls (right) */}
+            <div className="sr-mobile-body">
+              {/* Story text box */}
+              <div
+                ref={storyContainerRef}
+                className={`sr-mobile-story-box${story.lang !== "EN" ? " font-devanagari" : ""}`}
+              >
+                {showText && (
+                  <p
+                    className="sr-mobile-story-text"
+                    style={{ fontSize: dynamicFontSize }}
                   >
-                    <SettingsIcon fontSize="small" />
-                  </IconButton>
-                </div>
+                    {story.text || "Your story paragraph here"}
+                  </p>
+                )}
               </div>
 
-              {/* Body: Story text (left) | Controls (right) — always row */}
-              <div className="sr-mobile-body">
-                {/* Story Box */}
-                <div
-                  ref={storyContainerRef}
-                  className={`sr-mobile-story-box${story.lang !== "EN" ? " font-devanagari" : ""}`}
+              {/* Controls */}
+              <div className="sr-mobile-controls">
+                <span
+                  className="sr-mobile-timer"
+                  aria-live="polite"
+                  aria-atomic="true"
                 >
-                  {showText && (
-                    <p
-                      className="sr-mobile-story-text"
-                      style={{ fontSize: dynamicFontSize }}
-                    >
-                      {story.text || "Your story paragraph here"}
-                    </p>
-                  )}
-                </div>
-
-                {/* Controls Panel */}
-                <div className="sr-mobile-controls">
-                  <span
-                    className="sr-mobile-timer"
-                    aria-live="polite"
-                    aria-atomic="true"
-                  >
-                    {formatTime(timer)}
-                  </span>
-                  <canvas
-                    ref={canvasRef}
-                    width={110}
-                    height={34}
-                    className="sr-mobile-canvas"
-                    aria-hidden="true"
-                  />
-                  <div className="sr-mobile-btn-row">
-                    {RecordButton}
-                    {FinishButton}
-                  </div>
+                  {formatTime(timer)}
+                </span>
+                <canvas
+                  ref={canvasRef}
+                  width={95}
+                  height={30}
+                  className="sr-mobile-canvas"
+                  aria-hidden="true"
+                />
+                <div className="sr-mobile-btn-row">
+                  {RecordButton}
+                  {FinishButton}
                 </div>
               </div>
             </div>
@@ -817,7 +754,7 @@ const StoryRecorder = ({ details = {} }) => {
   }
 
   // ══════════════════════════════════════════════════════════════════════════
-  // DESKTOP VIEW — original layout, unchanged
+  // DESKTOP VIEW — original layout, completely unchanged
   // ══════════════════════════════════════════════════════════════════════════
   return (
     <>
@@ -964,7 +901,6 @@ const StoryRecorder = ({ details = {} }) => {
                   aria-hidden="true"
                 />
               </div>
-
               <div style={{ flex: 1, textAlign: "center" }}>
                 {RecordButton}
                 {audioBlob && !isRecording && (
@@ -985,7 +921,6 @@ const StoryRecorder = ({ details = {} }) => {
                   </Button>
                 )}
               </div>
-
               <div style={{ flex: 1 }} />
             </div>
           </div>
@@ -1024,15 +959,13 @@ const StoryRecorder = ({ details = {} }) => {
                     <audio controls src={audioURL} style={{ width: "100%" }} />
                   )}
                 </div>
-                <div style={{ display: "flex", justifyContent: "center", gap: "20px", marginTop: "30px" }}>
+                <div
+                  style={{ display: "flex", justifyContent: "center", gap: "20px", marginTop: "30px" }}
+                >
                   <Button
                     variant="contained"
                     sx={{ backgroundColor: "#ef5350", borderRadius: "30px", textTransform: "none" }}
-                    onClick={() => {
-                      setAudioBlob(null);
-                      setAudioURL(null);
-                      setSubmitted(false);
-                    }}
+                    onClick={() => { setAudioBlob(null); setAudioURL(null); setSubmitted(false); }}
                   >
                     Retry
                   </Button>
@@ -1056,16 +989,13 @@ const StoryRecorder = ({ details = {} }) => {
                 <p>You have completed</p>
                 <strong>{story.title}</strong>
                 <p style={{ marginTop: 20 }}>What would you like to do next?</p>
-                <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "20px", flexWrap: "wrap" }}>
+                <div
+                  style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "20px", flexWrap: "wrap" }}
+                >
                   <Button
                     variant="contained"
                     sx={{ backgroundColor: "#4caf50", borderRadius: "30px", textTransform: "none" }}
-                    onClick={() => {
-                      setAudioBlob(null);
-                      setAudioURL(null);
-                      setSubmitted(false);
-                      setSending(false);
-                    }}
+                    onClick={() => { setAudioBlob(null); setAudioURL(null); setSubmitted(false); setSending(false); }}
                   >
                     Record Again
                   </Button>
