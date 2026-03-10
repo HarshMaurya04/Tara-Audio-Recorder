@@ -20,7 +20,6 @@ import { getSenderFromBot, closeWebView } from "../services/botExtension";
 import MicIcon from "@mui/icons-material/Mic";
 import SettingsIcon from "@mui/icons-material/Settings";
 import CloseIcon from "@mui/icons-material/Close";
-import "../styles/StoryRecorder.mobile.css";
 
 // Default audio recording configuration
 const defaultMimeType = "audio/webm"; // Recording format
@@ -587,10 +586,28 @@ const StoryRecorder = ({ details = {} }) => {
     <>
       {!submitted ? (
         <div
-          className="recorderContainer"
+          style={{
+            minHeight: "100vh",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            background: "#f4f6f9",
+            padding: "20px",
+            boxSizing: "border-box",
+          }}
         >
           <div
-            className="recorderCard"
+            style={{
+              width: "100%",
+              maxWidth: "850px",
+              background: "#ffffff",
+              borderRadius: "24px",
+              padding: "30px 60px",
+              boxShadow: "0 15px 40px rgba(0,0,0,0.08)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "20px",
+            }}
           >
             {/* Mic Modal */}
             <Dialog
@@ -808,7 +825,7 @@ const StoryRecorder = ({ details = {} }) => {
 
             {/* Control Row */}
             <div
-              className="controlRow"
+              style={{ display: "flex", alignItems: "center", marginTop: 20 }}
             >
               {/* Left: Timer and waveform */}
               <div
