@@ -20,6 +20,7 @@ import { getSenderFromBot, closeWebView } from "../services/botExtension";
 import MicIcon from "@mui/icons-material/Mic";
 import SettingsIcon from "@mui/icons-material/Settings";
 import CloseIcon from "@mui/icons-material/Close";
+import "../styles/StoryRecorder.mobile.css";
 
 // Default audio recording configuration
 const defaultMimeType = "audio/webm"; // Recording format
@@ -98,6 +99,17 @@ const StoryRecorder = ({ details = {} }) => {
   const audioChunksRef = useRef([]);
   const audioContextRef = useRef(null);
   const dataArrayRef = useRef(null);
+
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     const loadPayload = async () => {
@@ -579,6 +591,100 @@ const StoryRecorder = ({ details = {} }) => {
         <CircularProgress />
         <p>Loading story...</p>
       </div>
+    );
+  }
+
+  if (isMobile) {
+    return (
+      <>
+        {!submitted ? (
+          <div className="mobileContainer">
+            <div className="mobileCard">
+              {/* STORY BOX */}
+              <div ref={storyContainerRef} className="mobileStoryBox">
+                {showText && (
+                  <p
+                    style={{
+                      fontSize: dynamicFontSize,
+                      margin: 0,
+                      color: "#7a7a7a",
+                      fontWeight: 500,
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    {story.text}
+                  </p>
+                )}
+              </div>
+
+              {/* CONTROLS */}
+              <div className="mobileControls">
+                <span>{formatTime(timer)}</span>
+
+                <canvas ref={canvasRef} width={200} height={40} />
+
+                {!isRecording ? (
+                  <Button onClick={startRecording}>Start</Button>
+                ) : (
+                  <Button onClick={stopRecording}>Stop</Button>
+                )}
+
+                {audioBlob && !isRecording && (
+                  <Button onClick={() => setSubmitted(true)}>Finish</Button>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="mobileReviewCard">
+            {!sending ? (
+              <>
+                <h2>Recorded Audio</h2>
+
+                {audioURL && <audio controls src={audioURL} />}
+
+                <div className="mobileButtons">
+                  <Button
+                    onClick={() => {
+                      setAudioBlob(null);
+                      setAudioURL(null);
+                      setSubmitted(false);
+                    }}
+                  >
+                    Retry
+                  </Button>
+
+                  <Button onClick={handleFinalSubmit}>Submit Attempt</Button>
+                </div>
+              </>
+            ) : (
+              <div>
+                <Alert severity="success">
+                  Recording uploaded successfully!
+                </Alert>
+
+                <p>You have completed</p>
+                <strong>{story.title}</strong>
+
+                <div className="mobileButtons">
+                  <Button
+                    onClick={() => {
+                      setAudioBlob(null);
+                      setAudioURL(null);
+                      setSubmitted(false);
+                      setSending(false);
+                    }}
+                  >
+                    Record Again
+                  </Button>
+
+                  <Button onClick={closeWebView}>Back to Chat</Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </>
     );
   }
 

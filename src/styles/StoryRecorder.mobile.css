@@ -1,0 +1,45 @@
+.mobileContainer {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f4f6f9;
+}
+
+.mobileCard {
+  width: 100%;
+  height: 90vh;
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+  padding: 15px;
+}
+
+.mobileStoryBox {
+  flex: 2;
+  border: 3px solid #2f80ed;
+  border-radius: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.mobileControls {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 15px;
+}
+
+.mobileReviewCard {
+  width: 100%;
+  padding: 20px;
+  text-align: center;
+}
+
+.mobileButtons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
