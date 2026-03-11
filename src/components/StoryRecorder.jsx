@@ -26,7 +26,7 @@ import "../styles/StoryRecorder.mobile.css";
 const defaultMimeType = "audio/webm";
 const defaultBitrate = 64000;
 const maxRecordingTime = 60;
-const minFontSize = 14;
+const minFontSize = 10;
 const maxFontSize = 30;
 
 const exitFullscreen = () => {
@@ -55,6 +55,12 @@ const useIsMobile = () => {
   return isMobile;
 };
 
+// ─── Returns true when the device is in portrait orientation ──────────────────
+const isPortrait = () =>
+  typeof screen.orientation !== "undefined"
+    ? screen.orientation.angle === 0 || screen.orientation.angle === 180
+    : window.innerHeight > window.innerWidth;
+
 // ─── Custom dropdown that stays INSIDE the rotated dialog (no MUI portal escape) ─
 const MicSelectorInline = ({ devices, selectedId, onChange, disabled }) => {
   const [open, setOpen] = useState(false);
@@ -64,7 +70,6 @@ const MicSelectorInline = ({ devices, selectedId, onChange, disabled }) => {
     devices.find((d) => d.deviceId === selectedId)?.label ||
     "Select Microphone";
 
-  // Close on outside click
   useEffect(() => {
     if (!open) return;
     const handler = (e) => {
@@ -92,7 +97,6 @@ const MicSelectorInline = ({ devices, selectedId, onChange, disabled }) => {
         disabled={disabled}
       >
         <span className="sr-mic-selector-trigger-left">
-          {/* Mic icon */}
           <svg
             width="16"
             height="16"
@@ -116,7 +120,7 @@ const MicSelectorInline = ({ devices, selectedId, onChange, disabled }) => {
               aria-selected={device.deviceId === selectedId}
               className={`sr-mic-selector-option${device.deviceId === selectedId ? " selected" : ""}`}
               onMouseDown={(e) => {
-                e.preventDefault(); // prevent blur before click registers
+                e.preventDefault();
                 onChange(device.deviceId);
                 setOpen(false);
               }}
@@ -181,7 +185,7 @@ const StoryRecorder = () => {
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
 
-  const [dynamicFontSize, setDynamicFontSize] = useState(32);
+  const [dynamicFontSize, setDynamicFontSize] = useState(18);
 
   const storyContainerRef = useRef(null);
   const measureRef = useRef(null);
@@ -196,6 +200,7 @@ const StoryRecorder = () => {
   const audioChunksRef = useRef([]);
   const audioContextRef = useRef(null);
   const dataArrayRef = useRef(null);
+  const fitSchedulerRef = useRef(null);
 
   useEffect(() => {
     const loadPayload = async () => {
@@ -218,22 +223,35 @@ const StoryRecorder = () => {
     loadPayload();
   }, []);
 
+  // ─── Core fit function ─────────────────────────────────────────────────────
+  // When the wrapper is CSS-rotated (portrait mode), clientWidth/clientHeight
+  // still report the *pre-rotation* box dimensions. We detect portrait and
+  // deliberately swap width↔height so we always measure the "visual" box size.
   const fitTextToContainer = useCallback(() => {
     if (!storyContainerRef.current || !measureRef.current || !story?.text)
       return;
 
     const container = storyContainerRef.current;
     const measurer = measureRef.current;
-    const containerStyles = window.getComputedStyle(container);
+    const cs = window.getComputedStyle(container);
 
-    const availableWidth =
+    let availableWidth =
       container.clientWidth -
-      parseFloat(containerStyles.paddingLeft) -
-      parseFloat(containerStyles.paddingRight);
-    const availableHeight =
+      parseFloat(cs.paddingLeft) -
+      parseFloat(cs.paddingRight);
+    let availableHeight =
       container.clientHeight -
-      parseFloat(containerStyles.paddingTop) -
-      parseFloat(containerStyles.paddingBottom);
+      parseFloat(cs.paddingTop) -
+      parseFloat(cs.paddingBottom);
+
+    // On mobile-portrait the CSS rotates the wrapper, so clientWidth/Height are
+    // swapped relative to what the user actually sees. Swap them back.
+    if (isMobile && isPortrait()) {
+      [availableWidth, availableHeight] = [availableHeight, availableWidth];
+    }
+
+    // Guard against zero/negative dimensions (element not in DOM yet)
+    if (availableWidth <= 0 || availableHeight <= 0) return;
 
     measurer.style.position = "absolute";
     measurer.style.visibility = "hidden";
@@ -257,13 +275,50 @@ const StoryRecorder = () => {
       } else max = mid - 1;
     }
     setDynamicFontSize(best);
-  }, [story]);
+  }, [story, isMobile]);
 
+  // ─── Schedule fit: double-rAF so CSS transform has fully painted ───────────
+  const scheduleFit = useCallback(
+    (delay = 0) => {
+      if (fitSchedulerRef.current) clearTimeout(fitSchedulerRef.current);
+      fitSchedulerRef.current = setTimeout(() => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            fitTextToContainer();
+          });
+        });
+      }, delay);
+    },
+    [fitTextToContainer],
+  );
+
+  // ─── Run fit on story load and whenever story/isMobile changes ─────────────
   useEffect(() => {
-    requestAnimationFrame(() => fitTextToContainer());
-    window.addEventListener("resize", fitTextToContainer);
-    return () => window.removeEventListener("resize", fitTextToContainer);
-  }, [fitTextToContainer]);
+    scheduleFit(0);
+  }, [scheduleFit]);
+
+  // ─── Re-fit on orientation change (portrait↔landscape) ────────────────────
+  useEffect(() => {
+    // screen.orientation API (modern)
+    const onOrientationChange = () => scheduleFit(150); // 150 ms lets rotation CSS settle
+
+    if (screen.orientation?.addEventListener) {
+      screen.orientation.addEventListener("change", onOrientationChange);
+    }
+    // Legacy fallback
+    window.addEventListener("orientationchange", onOrientationChange);
+    // Also catch resize (desktop zoom, split-screen, etc.)
+    window.addEventListener("resize", () => scheduleFit(50));
+
+    return () => {
+      if (screen.orientation?.removeEventListener) {
+        screen.orientation.removeEventListener("change", onOrientationChange);
+      }
+      window.removeEventListener("orientationchange", onOrientationChange);
+      window.removeEventListener("resize", () => scheduleFit(50));
+      if (fitSchedulerRef.current) clearTimeout(fitSchedulerRef.current);
+    };
+  }, [scheduleFit]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -326,7 +381,6 @@ const StoryRecorder = () => {
 
     const savedId = localStorage.getItem("selectedMicDeviceId");
     const found = uniqueDevices.find((d) => d.deviceId === savedId);
-
     if (savedId && found) {
       setSelectedDeviceId((p) => (p !== savedId ? savedId : p));
     } else if (savedId && !found) {
@@ -646,7 +700,6 @@ const StoryRecorder = () => {
   // MOBILE VIEW
   // ══════════════════════════════════════════════════════════════════════════
   if (isMobile) {
-    // ── Mobile mic dialog content — uses custom inline dropdown ──
     const MobileMicContent = (
       <>
         {!recorderSupported ? (
@@ -683,7 +736,6 @@ const StoryRecorder = () => {
             </Button>
           </>
         ) : (
-          /* ── Custom inline dropdown — renders inside rotated dialog ── */
           <MicSelectorInline
             devices={inputDevices}
             selectedId={selectedDeviceId}
@@ -825,11 +877,10 @@ const StoryRecorder = () => {
         <div className="sr-mobile-root">
           <div className="sr-mobile-landscape-wrapper">
             <div className="sr-mobile-card">
-              {/* ── Header (same as desktop) ── */}
               <div className="sr-mobile-header">
                 <span className="sr-mobile-header-meta">
                   Class: {story.grade} |{" "}
-                  Language: {story.lang === "EN" ? "English" : "Hindi"}
+                  {story.lang === "EN" ? "English" : "Hindi"}
                 </span>
                 <span className="sr-mobile-header-title">
                   {story.title || "Untitled Story"}
@@ -848,7 +899,6 @@ const StoryRecorder = () => {
                 </div>
               </div>
 
-              {/* ── Body: column layout ── */}
               <div className="sr-mobile-body">
                 {/* Story box — fixed height, text font scales inside */}
                 <div
@@ -865,7 +915,7 @@ const StoryRecorder = () => {
                   )}
                 </div>
 
-                {/* Controls row — timer | waveform canvas | buttons (right-aligned) */}
+                {/* Controls row */}
                 <div className="sr-mobile-controls">
                   <span
                     className="sr-mobile-timer"
@@ -898,8 +948,6 @@ const StoryRecorder = () => {
   // ══════════════════════════════════════════════════════════════════════════
   // DESKTOP VIEW
   // ══════════════════════════════════════════════════════════════════════════
-
-  // Desktop mic dialog content uses MUI Select
   const DesktopMicContent = (
     <>
       {!recorderSupported ? (
@@ -1063,7 +1111,7 @@ const StoryRecorder = () => {
                 >
                   <p>
                     Class: {story.grade} | Language:{" "}
-                    Language: {story.lang === "EN" ? "English" : "Hindi"}
+                    {story.lang === "EN" ? "English" : "Hindi"}
                   </p>
                 </div>
                 <span style={{ fontWeight: "600", fontSize: 18 }}>
