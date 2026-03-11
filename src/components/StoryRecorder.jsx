@@ -612,6 +612,20 @@ const StoryRecorder = () => {
   };
 
   if (!story) {
+    // Mobile: loading inside the rotated landscape wrapper
+    if (isMobile) {
+      return (
+        <div className="sr-mobile-root">
+          <div className="sr-mobile-landscape-wrapper">
+            <div className="sr-mobile-card" style={{ justifyContent: "center", alignItems: "center", minHeight: 120 }}>
+              <CircularProgress />
+              <p style={{ marginTop: 16, color: "#666", fontWeight: 500 }}>Loading story...</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    // Desktop: original centered loading
     return (
       <div style={{ textAlign: "center", marginTop: 100 }}>
         <CircularProgress />
