@@ -218,51 +218,6 @@ const StoryRecorder = () => {
     loadPayload();
   }, []);
 
-  // const fitTextToContainer = useCallback(() => {
-  //   if (!storyContainerRef.current || !measureRef.current || !story?.text)
-  //     return;
-
-  //   const container = storyContainerRef.current;
-  //   const measurer = measureRef.current;
-  //   const containerStyles = window.getComputedStyle(container);
-
-  //   const availableWidth =
-  //     container.clientWidth -
-  //     parseFloat(containerStyles.paddingLeft) -
-  //     parseFloat(containerStyles.paddingRight);
-  //   const availableHeight =
-  //     container.clientHeight -
-  //     parseFloat(containerStyles.paddingTop) -
-  //     parseFloat(containerStyles.paddingBottom);
-
-  //   measurer.style.position = "absolute";
-  //   measurer.style.visibility = "hidden";
-  //   measurer.style.width = `${availableWidth}px`;
-  //   measurer.style.whiteSpace = "pre-wrap";
-  //   measurer.style.wordWrap = "break-word";
-  //   measurer.style.padding = "0";
-  //   measurer.style.margin = "0";
-  //   measurer.style.border = "none";
-  //   measurer.textContent = story.text;
-
-  //   let min = minFontSize,
-  //     max = maxFontSize,
-  //     best = minFontSize;
-  //   while (min <= max) {
-  //     const mid = Math.floor((min + max) / 2);
-  //     measurer.style.fontSize = `${mid}px`;
-  //     if (measurer.scrollHeight <= availableHeight) {
-  //       best = mid;
-  //       min = mid + 1;
-  //     } else max = mid - 1;
-  //   }
-  //   setDynamicFontSize(best);
-  // }, [story]);
-
-  // ─── Replace these two blocks in StoryRecorder.jsx ───────────────────────
-
-  // 1. fitTextToContainer — unchanged logic, but measurer width now comes
-  //    from the container's own clientWidth (already correct after layout)
   const fitTextToContainer = useCallback(() => {
     if (!storyContainerRef.current || !measureRef.current || !story?.text)
       return;
@@ -279,9 +234,6 @@ const StoryRecorder = () => {
       container.clientHeight -
       parseFloat(containerStyles.paddingTop) -
       parseFloat(containerStyles.paddingBottom);
-
-    // Guard: if container hasn't laid out yet, skip
-    if (availableWidth <= 0 || availableHeight <= 0) return;
 
     measurer.style.position = "absolute";
     measurer.style.visibility = "hidden";
@@ -306,43 +258,6 @@ const StoryRecorder = () => {
     }
     setDynamicFontSize(best);
   }, [story]);
-
-  // 2. REPLACE the existing fitTextToContainer useEffect with this:
-  useEffect(() => {
-    if (!storyContainerRef.current) return;
-
-    // Double rAF: first frame commits layout, second frame reads correct dims
-    // after any CSS transform (rotation) has been applied.
-    let raf1, raf2;
-    const schedulefit = () => {
-      raf1 = requestAnimationFrame(() => {
-        raf2 = requestAnimationFrame(() => fitTextToContainer());
-      });
-    };
-
-    schedulefit();
-
-    // ResizeObserver fires after layout (including after CSS rotation reflow),
-    // so it correctly re-measures when orientation changes.
-    let ro;
-    if (typeof ResizeObserver !== "undefined") {
-      ro = new ResizeObserver(() => {
-        // Small timeout lets the CSS transform settle before we measure
-        setTimeout(fitTextToContainer, 50);
-      });
-      ro.observe(storyContainerRef.current);
-    } else {
-      // Fallback for browsers without ResizeObserver
-      window.addEventListener("resize", schedulefit);
-    }
-
-    return () => {
-      cancelAnimationFrame(raf1);
-      cancelAnimationFrame(raf2);
-      if (ro) ro.disconnect();
-      else window.removeEventListener("resize", schedulefit);
-    };
-  }, [fitTextToContainer]);
 
   useEffect(() => {
     requestAnimationFrame(() => fitTextToContainer());
@@ -913,8 +828,8 @@ const StoryRecorder = () => {
               {/* ── Header (same as desktop) ── */}
               <div className="sr-mobile-header">
                 <span className="sr-mobile-header-meta">
-                  Class: {story.grade} | Language:{" "}
-                  {story.lang === "EN" ? "English" : "Hindi"}
+                  Class: {story.grade} |{" "}
+                  Language: {story.lang === "EN" ? "English" : "Hindi"}
                 </span>
                 <span className="sr-mobile-header-title">
                   {story.title || "Untitled Story"}
@@ -1147,8 +1062,8 @@ const StoryRecorder = () => {
                   }}
                 >
                   <p>
-                    Class: {story.grade} | Language: Language:{" "}
-                    {story.lang === "EN" ? "English" : "Hindi"}
+                    Class: {story.grade} | Language:{" "}
+                    Language: {story.lang === "EN" ? "English" : "Hindi"}
                   </p>
                 </div>
                 <span style={{ fontWeight: "600", fontSize: 18 }}>
