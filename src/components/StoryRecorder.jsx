@@ -26,7 +26,7 @@ import "../styles/StoryRecorder.mobile.css";
 const defaultMimeType = "audio/webm";
 const defaultBitrate = 64000;
 const maxRecordingTime = 60;
-const minFontSize = 14;
+const minFontSize = 9;
 const maxFontSize = 30;
 
 const exitFullscreen = () => {
@@ -819,7 +819,6 @@ const StoryRecorder = () => {
     }
 
     // Mobile — Recording screen
-    // Replace the existing mobile return block with this:
     return (
       <>
         {MobileMicDialogJSX}
@@ -830,7 +829,7 @@ const StoryRecorder = () => {
               <div className="sr-mobile-header">
                 <span className="sr-mobile-header-meta">
                   Class: {story.grade} |{" "}
-                  {story.lang === "EN" ? "English" : "Hindi"}
+                  Language: {story.lang === "EN" ? "English" : "Hindi"}
                 </span>
                 <span className="sr-mobile-header-title">
                   {story.title || "Untitled Story"}
@@ -1064,7 +1063,7 @@ const StoryRecorder = () => {
                 >
                   <p>
                     Class: {story.grade} | Language:{" "}
-                    {story.lang === "EN" ? "English" : "Hindi"}
+                    Language: {story.lang === "EN" ? "English" : "Hindi"}
                   </p>
                 </div>
                 <span style={{ fontWeight: "600", fontSize: 18 }}>
