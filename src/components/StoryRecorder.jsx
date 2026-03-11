@@ -617,9 +617,18 @@ const StoryRecorder = () => {
       return (
         <div className="sr-mobile-root">
           <div className="sr-mobile-landscape-wrapper">
-            <div className="sr-mobile-card" style={{ justifyContent: "center", alignItems: "center", minHeight: 120 }}>
+            <div
+              className="sr-mobile-card"
+              style={{
+                justifyContent: "center",
+                alignItems: "center",
+                minHeight: 120,
+              }}
+            >
               <CircularProgress />
-              <p style={{ marginTop: 16, color: "#666", fontWeight: 500 }}>Loading story...</p>
+              <p style={{ marginTop: 16, color: "#666", fontWeight: 500 }}>
+                Loading story...
+              </p>
             </div>
           </div>
         </div>
@@ -810,9 +819,14 @@ const StoryRecorder = () => {
                         textTransform: "none",
                       }}
                       onClick={() => {
+                        if (audioURL) {
+                          URL.revokeObjectURL(audioURL);
+                        }
+
                         setAudioBlob(null);
                         setAudioURL(null);
                         setSubmitted(false);
+                        setTimer(0);
                       }}
                     >
                       Retry
@@ -893,8 +907,8 @@ const StoryRecorder = () => {
             <div className="sr-mobile-card">
               <div className="sr-mobile-header">
                 <span className="sr-mobile-header-meta">
-                  Class: {story.grade} |{" "}
-                  Language: {story.lang === "EN" ? "English" : "Hindi"}
+                  Class: {story.grade} | Language:{" "}
+                  {story.lang === "EN" ? "English" : "Hindi"}
                 </span>
                 <span className="sr-mobile-header-title">
                   {story.title || "Untitled Story"}
@@ -1124,8 +1138,8 @@ const StoryRecorder = () => {
                   }}
                 >
                   <p>
-                    Class: {story.grade} | Language:{" "}
-                    Language: {story.lang === "EN" ? "English" : "Hindi"}
+                    Class: {story.grade} | Language: Language:{" "}
+                    {story.lang === "EN" ? "English" : "Hindi"}
                   </p>
                 </div>
                 <span style={{ fontWeight: "600", fontSize: 18 }}>
@@ -1292,9 +1306,14 @@ const StoryRecorder = () => {
                       textTransform: "none",
                     }}
                     onClick={() => {
+                      if (audioURL) {
+                        URL.revokeObjectURL(audioURL);
+                      }
+
                       setAudioBlob(null);
                       setAudioURL(null);
                       setSubmitted(false);
+                      setTimer(0);
                     }}
                   >
                     Retry
