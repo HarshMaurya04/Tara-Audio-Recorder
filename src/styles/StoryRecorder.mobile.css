@@ -111,7 +111,7 @@
 /* ── Story Box — fixed height, text resizes inside ── */
 .sr-mobile-story-box {
   width: 100%;
-  height: 250px;          /* fixed height — only font scales */
+  height: 300px;          /* fixed height — only font scales */
   flex-shrink: 0;
   background-color: #ffffff;
   border-radius: 16px;
