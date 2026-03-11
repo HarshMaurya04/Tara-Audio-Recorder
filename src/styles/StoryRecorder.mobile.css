@@ -109,7 +109,7 @@
 /* ── Story Box ── */
 .sr-mobile-story-box {
   flex: 1 1 60%;
-  height: 80%;        /* lock height */
+  height: 100%;        /* lock height */
   min-height: 0;       /* prevent flex overflow */
   background-color: #ffffff;
   border-radius: 14px;
@@ -186,7 +186,7 @@
   pointer-events: none;
 }
 
-@media (max-width: 768px) and (orientation: portrait) {
+@media (max-width: 900px) {
   .sr-mobile-dialog-inner {
     transform: rotate(90deg);
     transform-origin: center center;
