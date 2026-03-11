@@ -26,7 +26,7 @@ import "../styles/StoryRecorder.mobile.css";
 const defaultMimeType = "audio/webm";
 const defaultBitrate = 64000;
 const maxRecordingTime = 60;
-const minFontSize = 20;
+const minFontSize = 14;
 const maxFontSize = 30;
 
 const exitFullscreen = () => {
