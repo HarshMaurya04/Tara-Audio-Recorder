@@ -4,8 +4,8 @@
 
 /* ── Root: position:fixed so it fills screen on first paint in webview ── */
 .sr-mobile-root {
-  width: 100%;
-  height: 100%;
+  width: 80%;
+  height: 80%;
   display: flex;
   justify-content: center;
   align-items: center;
