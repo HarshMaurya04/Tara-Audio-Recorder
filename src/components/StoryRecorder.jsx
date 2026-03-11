@@ -26,7 +26,7 @@ import "../styles/StoryRecorder.mobile.css";
 const defaultMimeType = "audio/webm";
 const defaultBitrate = 64000;
 const maxRecordingTime = 60;
-const minFontSize = 18;
+const minFontSize = 14;
 const maxFontSize = 30;
 
 const exitFullscreen = () => {
@@ -646,7 +646,7 @@ const StoryRecorder = ({ details = {} }) => {
   // MOBILE VIEW
   // ══════════════════════════════════════════════════════════════════════════
   if (isMobile) {
-    // ── Mobile mic dialog content — uses custom inline dropdown (no MUI portal escape) ──
+    // ── Mobile mic dialog content — uses custom inline dropdown ──
     const MobileMicContent = (
       <>
         {!recorderSupported ? (
@@ -683,7 +683,7 @@ const StoryRecorder = ({ details = {} }) => {
             </Button>
           </>
         ) : (
-          /* ── Custom inline dropdown — renders inside rotated dialog, no portal ── */
+          /* ── Custom inline dropdown — renders inside rotated dialog ── */
           <MicSelectorInline
             devices={inputDevices}
             selectedId={selectedDeviceId}
@@ -892,10 +892,10 @@ const StoryRecorder = ({ details = {} }) => {
   }
 
   // ══════════════════════════════════════════════════════════════════════════
-  // DESKTOP VIEW — original layout, unchanged
+  // DESKTOP VIEW
   // ══════════════════════════════════════════════════════════════════════════
 
-  // Desktop mic dialog content uses MUI Select (no rotation issue on desktop)
+  // Desktop mic dialog content uses MUI Select
   const DesktopMicContent = (
     <>
       {!recorderSupported ? (
@@ -1103,6 +1103,8 @@ const StoryRecorder = ({ details = {} }) => {
                 justifyContent: "center",
                 alignItems: "center",
                 textAlign: "center",
+                overflow: "hidden",      
+                boxSizing: "border-box",  
               }}
             >
               {showText && (
@@ -1113,6 +1115,8 @@ const StoryRecorder = ({ details = {} }) => {
                     color: "#7a7a7a",
                     fontWeight: 500,
                     lineHeight: 1.6,
+                    wordBreak: "break-word",
+                    overflowWrap: "break-word",
                   }}
                 >
                   {story.text || "Your story paragraph here"}
