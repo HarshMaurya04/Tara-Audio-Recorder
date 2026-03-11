@@ -4,8 +4,11 @@
 
 /* ── Root: position:fixed so it fills screen on first paint in webview ── */
 .sr-mobile-root {
-  width: 80%;
-  height: 80%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -106,7 +109,7 @@
 /* ── Story Box ── */
 .sr-mobile-story-box {
   flex: 1 1 60%;
-  height: 100%;        /* lock height */
+  height: 80%;        /* lock height */
   min-height: 0;       /* prevent flex overflow */
   background-color: #ffffff;
   border-radius: 14px;
