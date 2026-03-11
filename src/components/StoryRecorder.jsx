@@ -151,7 +151,7 @@ const MobileMicDialog = ({ open, onClose, children }) => {
   );
 };
 
-const StoryRecorder = ({ details = {} }) => {
+const StoryRecorder = () => {
   const formatTime = useCallback(
     (s) =>
       `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`,
@@ -819,12 +819,14 @@ const StoryRecorder = ({ details = {} }) => {
     }
 
     // Mobile — Recording screen
+    // Replace the existing mobile return block with this:
     return (
       <>
         {MobileMicDialogJSX}
         <div className="sr-mobile-root">
           <div className="sr-mobile-landscape-wrapper">
             <div className="sr-mobile-card">
+              {/* ── Header (same as desktop) ── */}
               <div className="sr-mobile-header">
                 <span className="sr-mobile-header-meta">
                   Class: {story.grade} |{" "}
@@ -847,7 +849,9 @@ const StoryRecorder = ({ details = {} }) => {
                 </div>
               </div>
 
+              {/* ── Body: column layout ── */}
               <div className="sr-mobile-body">
+                {/* Story box — fixed height, text font scales inside */}
                 <div
                   ref={storyContainerRef}
                   className={`sr-mobile-story-box${story.lang !== "EN" ? " font-devanagari" : ""}`}
@@ -862,6 +866,7 @@ const StoryRecorder = ({ details = {} }) => {
                   )}
                 </div>
 
+                {/* Controls row — timer | waveform canvas | buttons (right-aligned) */}
                 <div className="sr-mobile-controls">
                   <span
                     className="sr-mobile-timer"
@@ -872,8 +877,8 @@ const StoryRecorder = ({ details = {} }) => {
                   </span>
                   <canvas
                     ref={canvasRef}
-                    width={110}
-                    height={34}
+                    width={160}
+                    height={36}
                     className="sr-mobile-canvas"
                     aria-hidden="true"
                   />
@@ -1103,8 +1108,8 @@ const StoryRecorder = ({ details = {} }) => {
                 justifyContent: "center",
                 alignItems: "center",
                 textAlign: "center",
-                overflow: "hidden",      
-                boxSizing: "border-box",  
+                overflow: "hidden",
+                boxSizing: "border-box",
               }}
             >
               {showText && (
