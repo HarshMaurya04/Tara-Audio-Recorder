@@ -880,7 +880,7 @@ const StoryRecorder = () => {
               <div className="sr-mobile-header">
                 <span className="sr-mobile-header-meta">
                   Class: {story.grade} |{" "}
-                  {story.lang === "EN" ? "English" : "Hindi"}
+                  Language: {story.lang === "EN" ? "English" : "Hindi"}
                 </span>
                 <span className="sr-mobile-header-title">
                   {story.title || "Untitled Story"}
@@ -1111,7 +1111,7 @@ const StoryRecorder = () => {
                 >
                   <p>
                     Class: {story.grade} | Language:{" "}
-                    {story.lang === "EN" ? "English" : "Hindi"}
+                    Language: {story.lang === "EN" ? "English" : "Hindi"}
                   </p>
                 </div>
                 <span style={{ fontWeight: "600", fontSize: 18 }}>
