@@ -47,7 +47,7 @@
 /* ── Mobile Card — vertical column, same as desktop ── */
 .sr-mobile-card {
   width: 100%;
-  max-width: 820px;
+  max-width: 900px;
   background: #ffffff;
   border-radius: 20px;
   padding: 18px 28px 20px;
