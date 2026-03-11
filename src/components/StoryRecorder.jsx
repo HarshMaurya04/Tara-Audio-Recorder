@@ -1138,7 +1138,7 @@ const StoryRecorder = () => {
                   }}
                 >
                   <p>
-                    Class: {story.grade} | Language: Language:{" "}
+                    Class: {story.grade} | Language:{" "}
                     {story.lang === "EN" ? "English" : "Hindi"}
                   </p>
                 </div>
